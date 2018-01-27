@@ -28,7 +28,6 @@ int matchHamming(const Mat& descriptors1,
 {
 	 const int maxDist = descriptors1.cols<<3;
 	 matches.resize(descriptors1.rows);
-	 #pragma omp parallel for
 	 for (int i=0; i<descriptors1.rows; ++i)
 	 {
 		 int minDist1 = maxDist, minDist2 = maxDist;
@@ -62,11 +61,9 @@ int matchHamming(const Mat& descriptors1,
 			}
 		}
 	  }
-	  #pragma omp critical
-	  {
-	   matches[i].push_back(DMatch(i, minId1, minIdImg1, (float) minDist1));
-	   matches[i].push_back(DMatch(i, minId2, minIdImg2, (float) minDist2));
-	  }
+
+		matches[i].push_back(DMatch(i, minId1, minIdImg1, (float) minDist1));
+		matches[i].push_back(DMatch(i, minId2, minIdImg2, (float) minDist2));
 	 }
 	 return 0;
 }
@@ -129,8 +126,8 @@ int main(int argc, char** argv)
 	double t1,t2,tdet;
 	Mat src_1,src_2, descriptors_1, descriptors_2;
 	vector<KeyPoint> keypoints_1, keypoints_2;
-	src_1 = imread("images/000000.png", CV_LOAD_IMAGE_GRAYSCALE);
-	src_2 = imread("images/000001.png", CV_LOAD_IMAGE_GRAYSCALE);
+	src_1 = imread("src/images/000000.png", CV_LOAD_IMAGE_GRAYSCALE);
+	src_2 = imread("src/images/000001.png", CV_LOAD_IMAGE_GRAYSCALE);
 	//src_1 = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
 	//src_2 = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
 
