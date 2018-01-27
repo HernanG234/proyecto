@@ -3,12 +3,14 @@
 ### Useful commands: ###
 
 Compilation:
-```
-g++ FAST_BRIEF.cpp -o FAST_BRIEF `pkg-config --cflags --libs opencv`
-```
+`make`
+
+Run:
+`./FAST_BRIEF`
+
 
 ### TODO: ###
-- [ ] Add Makefile
+- [x] Add Makefile
 - [ ] Try OpenCv Matching implementation
 - [ ] Add other features to compare
 - [ ] Don't know
