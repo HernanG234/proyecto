@@ -6,11 +6,21 @@ Compilation:
 `make`
 
 Run:
-`./FAST_BRIEF`
+`./test DetectorName DescriptorName`
 
+### Available Detectors: ###
+- FAST
+- ORB
+- GFTT
+
+### Available Descriptors: ###
+- BRIEF
+- BRISK
+- FREAK
+- ORB
 
 ### TODO: ###
 - [x] Add Makefile
-- [ ] Try OpenCv Matching implementation
+- [x] Try OpenCv Matching implementation
 - [ ] Add other features to compare
 - [ ] Don't know
