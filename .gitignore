@@ -2,4 +2,6 @@
 *.so
 .*.swp
 FAST_BRIEF
+OpenCV/
+tags
 matches.png
