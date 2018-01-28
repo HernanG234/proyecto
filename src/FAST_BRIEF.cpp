@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 
+
 // OpenCv headers
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/core/core.hpp>
@@ -30,54 +31,141 @@ int main(int argc, char** argv)
 	//src_1 = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
 	//src_2 = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
 
-	Ptr<FastFeatureDetector> detector_1=FastFeatureDetector::create(106);
-	Ptr<FastFeatureDetector> detector_2=FastFeatureDetector::create(106);
-	Ptr<BriefDescriptorExtractor> featureExtractor_1 = BriefDescriptorExtractor::create();
-	Ptr<BriefDescriptorExtractor> featureExtractor_2 = BriefDescriptorExtractor::create();
-	detector_1->detect(src_1,keypoints_1,Mat());
+	//Ayuda
+	if(argc!=3){
+		cout<<"Modo de uso: ./ejecutable <detector> <descriptor>"<<endl;
+		cout<<"Detector: FAST,ORB o GFTT"<<endl;
+		cout<<"Descriptor:BRIEF, BRISK, FREAK ,(los que probemos)"<<endl;
+		return 0;
+	}
 
-	//Deteccion imagen 1
-	t1 = cv::getTickCount();
-	detector_1->detect(src_1,keypoints_1,Mat());
-	t2 = cv::getTickCount();
-	tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
-	//cout<<"Imagen 1: "<<endl;
-	cout<<"Cantidad de Keypoints: "<<keypoints_1.size()<<endl;
-	cout<<"Tiempo deteccion (FAST): "<<tdet<<" ms"<<endl;
+	//Si el detector es FAST
+	if( !strcmp("FAST", argv[1] )){	
+		Ptr<FastFeatureDetector> detector_1=FastFeatureDetector::create(106);
+		Ptr<FastFeatureDetector> detector_2=FastFeatureDetector::create(106);
+		detector_1->detect(src_1,keypoints_1,Mat());
 
-	//Deteccion imagen 2
-	//t1 = cv::getTickCount();
-	detector_2->detect(src_2,keypoints_2,Mat());
-	/*t2 = cv::getTickCount();
-	tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
-	cout<<"Imagen 2: "<<endl;
-	cout<<"Cantidad de Keypoints : "<<keypoints_2.size()<<endl;
-	cout<<"Tiempo deteccion (FAST): "<<tdet<<" ms"<<endl; */
-	//KeyPointsFilter::retainBest(keypoints, 500);
+		//Deteccion imagen 1
+		t1 = cv::getTickCount();
+		detector_1->detect(src_1,keypoints_1,Mat());
+		t2 = cv::getTickCount();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		//cout<<"Imagen 1: "<<endl;
+		cout<<"Cantidad de Keypoints: "<<keypoints_1.size()<<endl;
+		cout<<"Tiempo deteccion (FAST): "<<tdet<<" ms"<<endl;
+
+		//Deteccion imagen 2
+		//t1 = cv::getTickCount();
+		detector_2->detect(src_2,keypoints_2,Mat());
+		/*t2 = cv::getTickCount();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Imagen 2: "<<endl;
+		cout<<"Cantidad de Keypoints : "<<keypoints_2.size()<<endl;
+		cout<<"Tiempo deteccion (FAST): "<<tdet<<" ms"<<endl; */
+		//KeyPointsFilter::retainBest(keypoints, 500);
+	}
+
+	//Si el detector es ORB
+
+	if( !strcmp("ORB", argv[1] )){
+		Ptr<FeatureDetector> detector = ORB::create();
+		detector->detect(src_1, keypoints_1);
+
+		//Deteccion imagen 1
+		t1 = cv::getTickCount();
+		detector->detect(src_1, keypoints_1);
+		t2 = cv::getTickCount();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Cantidad de Keypoints : "<<keypoints_1.size()<<endl;
+		cout<<"Tiempo deteccion (ORB): "<<tdet<<" ms"<<endl; 
+
+		//Deteccion imagen 2
+		//t1 = cv::getTickCount();
+		detector->detect(src_2, keypoints_2);
+		/*t2 = cv::getTickCount();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Imagen 2: "<<endl;
+		cout<<"Cantidad de Keypoints : "<<keypoints_2.size()<<endl;
+		cout<<"Tiempo deteccion (ORB): "<<tdet<<" ms"<<endl; */
+		//KeyPointsFilter::retainBest(keypoints, 500);
+
+	}
+
+
+	//Si el detector es GFTT
+
+	if( !strcmp("GFTT", argv[1] )){
+
+		Ptr<FeatureDetector> detector = GFTTDetector::create();
+		detector->detect(src_1, keypoints_1);
+
+		//Deteccion imagen 1
+		t1 = cv::getTickCount();
+		detector->detect(src_1, keypoints_1);
+		t2 = cv::getTickCount();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Cantidad de Keypoints : "<<keypoints_1.size()<<endl;
+		cout<<"Tiempo deteccion (GFTT): "<<tdet<<" ms"<<endl;
+
+		//Deteccion imagen 2
+		//t1 = cv::getTickCount();
+		detector->detect(src_2, keypoints_2);
+		/*t2 = cv::getTickCount();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Imagen 2: "<<endl;
+		cout<<"Cantidad de Keypoints : "<<keypoints_2.size()<<endl;
+		cout<<"Tiempo deteccion (GFTT): "<<tdet<<" ms"<<endl; */
+		//KeyPointsFilter::retainBest(keypoints, 500);
+	}
+
+
+	//Dibujar kpts en las dos imagenes
 
 	drawKeypoints(src_1, keypoints_1, src_1);
 	drawKeypoints(src_2, keypoints_2, src_2);
 	imshow("keypoints",src_1);
 	imshow("keypoints_2",src_2);
 
-	//Descripcion imagen 1
-	t1 = cv::getTickCount();
-	featureExtractor_1->compute(src_1, keypoints_1, descriptors_1);
-	t2 = cv::getTickCount();
-	tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
-	//cout<<"Imagen 1: "<<endl;
-	cout<<"Tiempo de descripcion (BRIEF): "<<tdet<<" ms"<<endl;
 
-	//Descripcion imagen 2
-	//t1 = cv::getTickCount(); 
-	featureExtractor_2->compute(src_2, keypoints_2, descriptors_2);
-	/*t2 = cv::getTickCount();
-	tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
-	cout<<"Imagen 2: "<<endl;
-	cout<<"Tiempo de descripcion (BRIEF): "<<tdet<<" ms"<<endl;*/
+	//Si el descriptor es BRIEF
 
-	cout<<descriptors_1.size()<<endl;
-	cout<<descriptors_2.size()<<endl;
+	
+	if( !strcmp("BRIEF", argv[2] )){
+		Ptr<BriefDescriptorExtractor> featureExtractor_1 = BriefDescriptorExtractor::create();
+		Ptr<BriefDescriptorExtractor> featureExtractor_2 = BriefDescriptorExtractor::create();
+		
+		//Descripcion imagen 1
+		t1 = cv::getTickCount();
+		featureExtractor_1->compute(src_1, keypoints_1, descriptors_1);
+		t2 = cv::getTickCount();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		//cout<<"Imagen 1: "<<endl;
+		cout<<"Tiempo de descripcion (BRIEF): "<<tdet<<" ms"<<endl;
+
+		//Descripcion imagen 2
+		//t1 = cv::getTickCount(); 
+		featureExtractor_2->compute(src_2, keypoints_2, descriptors_2);
+		/*t2 = cv::getTickCount();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Imagen 2: "<<endl;
+		cout<<"Tiempo de descripcion (BRIEF): "<<tdet<<" ms"<<endl;*/
+
+		cout<<descriptors_1.size()<<endl;
+		cout<<descriptors_2.size()<<endl;
+
+	}
+	
+	//Si el descriptor es BRISK
+
+	if( !strcmp("BRISK", argv[2] )){
+	//Completar
+	}
+
+	//Si el descriptor es FREAK
+
+	if( !strcmp("FREAK", argv[2] )){
+	//Completar
+	}
 
 	//Matching
 	BFMatcher matcher(NORM_HAMMING);
