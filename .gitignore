@@ -1,7 +1,7 @@
 *.o
 *.so
 .*.swp
-FAST_BRIEF
+test
 OpenCV/
 tags
 matches.png

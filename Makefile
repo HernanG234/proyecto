@@ -2,7 +2,7 @@ CC=g++
 
 SOURCES=$(wildcard src/*.cpp)
 OBJECTS=$(SOURCES:.cpp=.o)
-EXECUTABLE=FAST_BRIEF
+EXECUTABLE=test
 
 CFLAGS = -Wall `pkg-config opencv --cflags`
 LDFLAGS = `pkg-config opencv --libs`
