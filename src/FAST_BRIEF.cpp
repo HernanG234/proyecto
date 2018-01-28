@@ -41,13 +41,16 @@ int main(int argc, char** argv)
 
 	//Si el detector es FAST
 	if( !strcmp("FAST", argv[1] )){	
-		Ptr<FastFeatureDetector> detector_1=FastFeatureDetector::create(106);
-		Ptr<FastFeatureDetector> detector_2=FastFeatureDetector::create(106);
-		detector_1->detect(src_1,keypoints_1,Mat());
+
+		/* void FAST(InputArray image, vector<KeyPoint>& keypoints, int threshold, bool nonmaxSuppression=true )*/
+		
+		Ptr<FastFeatureDetector> detector=FastFeatureDetector::create(106);
+		//Ptr<FastFeatureDetector> detector_2=FastFeatureDetector::create(106);
+		detector->detect(src_1,keypoints_1,Mat());
 
 		//Deteccion imagen 1
 		t1 = cv::getTickCount();
-		detector_1->detect(src_1,keypoints_1,Mat());
+		detector->detect(src_1,keypoints_1,Mat());
 		t2 = cv::getTickCount();
 		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
 		//cout<<"Imagen 1: "<<endl;
@@ -56,7 +59,7 @@ int main(int argc, char** argv)
 
 		//Deteccion imagen 2
 		//t1 = cv::getTickCount();
-		detector_2->detect(src_2,keypoints_2,Mat());
+		detector->detect(src_2,keypoints_2,Mat());
 		/*t2 = cv::getTickCount();
 		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
 		cout<<"Imagen 2: "<<endl;
@@ -67,7 +70,11 @@ int main(int argc, char** argv)
 
 	//Si el detector es ORB
 
-	if( !strcmp("ORB", argv[1] )){
+	else if( !strcmp("ORB", argv[1] )){
+
+		/*Parametros por defecto:
+		ORB(int nfeatures=500, float scaleFactor=1.2f, int nlevels=8, int edgeThreshold=31, int firstLevel=0, int WTA_K=2, int 				scoreType=ORB::HARRIS_SCORE, int patchSize=31)*/
+
 		Ptr<FeatureDetector> detector = ORB::create();
 		detector->detect(src_1, keypoints_1);
 
@@ -94,9 +101,13 @@ int main(int argc, char** argv)
 
 	//Si el detector es GFTT
 
-	if( !strcmp("GFTT", argv[1] )){
+	else if( !strcmp("GFTT", argv[1] )){
 
-		Ptr<FeatureDetector> detector = GFTTDetector::create();
+		/*Parametros por defecto:
+		static Ptr< GFTTDetector > 	create (int maxCorners=1000, double qualityLevel=0.01, double minDistance=1, int 				blockSize=3, bool useHarrisDetector=false, double k=0.04)*/
+		
+		//tarda lo mismo en detectar 500 o 1000 puntos
+		Ptr<FeatureDetector> detector = GFTTDetector::create(500);
 		detector->detect(src_1, keypoints_1);
 
 		//Deteccion imagen 1
@@ -118,25 +129,28 @@ int main(int argc, char** argv)
 		//KeyPointsFilter::retainBest(keypoints, 500);
 	}
 
+	else{
+		cout<<argv[1]<<" no es un nombre de detector valido"<<endl;
+		cout<<"Detectores: FAST,ORB o GFTT"<<endl;
+		return 0;
+	}
 
-	//Dibujar kpts en las dos imagenes
-
-	drawKeypoints(src_1, keypoints_1, src_1);
-	drawKeypoints(src_2, keypoints_2, src_2);
-	imshow("keypoints",src_1);
-	imshow("keypoints_2",src_2);
-
+	//Descriptores
 
 	//Si el descriptor es BRIEF
 
 	
 	if( !strcmp("BRIEF", argv[2] )){
-		Ptr<BriefDescriptorExtractor> featureExtractor_1 = BriefDescriptorExtractor::create();
-		Ptr<BriefDescriptorExtractor> featureExtractor_2 = BriefDescriptorExtractor::create();
+
+		/*Parametros por defecto:
+		static Ptr< BriefDescriptorExtractor > 	create (int bytes=32, bool use_orientation=false)*/
+		
+		Ptr<BriefDescriptorExtractor> featureExtractor = BriefDescriptorExtractor::create();
+		//Ptr<BriefDescriptorExtractor> featureExtractor_2 = BriefDescriptorExtractor::create();
 		
 		//Descripcion imagen 1
 		t1 = cv::getTickCount();
-		featureExtractor_1->compute(src_1, keypoints_1, descriptors_1);
+		featureExtractor->compute(src_1, keypoints_1, descriptors_1);
 		t2 = cv::getTickCount();
 		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
 		//cout<<"Imagen 1: "<<endl;
@@ -144,7 +158,7 @@ int main(int argc, char** argv)
 
 		//Descripcion imagen 2
 		//t1 = cv::getTickCount(); 
-		featureExtractor_2->compute(src_2, keypoints_2, descriptors_2);
+		featureExtractor->compute(src_2, keypoints_2, descriptors_2);
 		/*t2 = cv::getTickCount();
 		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
 		cout<<"Imagen 2: "<<endl;
@@ -157,15 +171,81 @@ int main(int argc, char** argv)
 	
 	//Si el descriptor es BRISK
 
-	if( !strcmp("BRISK", argv[2] )){
-	//Completar
+	else if( !strcmp("BRISK", argv[2] )){
+
+		/*Parametros por defecto:
+		BRISK::BRISK(int thresh=30, int octaves=3, float patternScale=1.0f)*/
+		
+		Ptr<Feature2D> featureExtractor = BRISK::create();
+
+		//Descripcion imagen 1
+		featureExtractor->compute(src_1, keypoints_1, descriptors_1);
+		t1 = cv::getTickCount();
+		featureExtractor->compute(src_1, keypoints_1, descriptors_1);
+		t2 = cv::getTickCount();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		//cout<<"Imagen 1: "<<endl;
+		cout<<"Tiempo de descripcion (BRISK): "<<tdet<<" ms"<<endl;
+
+
+		//Descripcion imagen 2
+		//t1 = cv::getTickCount(); 
+		featureExtractor->compute(src_2, keypoints_2, descriptors_2);
+		/*t2 = cv::getTickCount();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Imagen 2: "<<endl;
+		cout<<"Tiempo de descripcion (BRISK): "<<tdet<<" ms"<<endl;*/
+
+		cout<<descriptors_1.size()<<endl;
+		cout<<descriptors_2.size()<<endl;
 	}
 
 	//Si el descriptor es FREAK
 
-	if( !strcmp("FREAK", argv[2] )){
-	//Completar
+	else if( !strcmp("FREAK", argv[2] )){
+		
+		/*static Ptr< FREAK > 	create (bool orientationNormalized=true, bool scaleNormalized=true,
+ 		float patternScale=22.0f, int 	nOctaves=4, const std::vector< int > &selectedPairs=std::vector< int >())*/
+
+		Ptr<Feature2D> featureExtractor = FREAK::create(); 
+
+		//Descripcion imagen 1
+		featureExtractor->compute(src_1, keypoints_1, descriptors_1);
+		t1 = cv::getTickCount();
+		featureExtractor->compute(src_1, keypoints_1, descriptors_1);
+		t2 = cv::getTickCount();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		//cout<<"Imagen 1: "<<endl;
+		cout<<"Tiempo de descripcion (FREAK): "<<tdet<<" ms"<<endl;
+
+
+		//Descripcion imagen 2
+		//t1 = cv::getTickCount(); 
+		featureExtractor->compute(src_2, keypoints_2, descriptors_2);
+		/*t2 = cv::getTickCount();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Imagen 2: "<<endl;
+		cout<<"Tiempo de descripcion (FREAK): "<<tdet<<" ms"<<endl;*/
+
+		cout<<descriptors_1.size()<<endl;
+		cout<<descriptors_2.size()<<endl;
+		
 	}
+
+	else{
+		cout<<argv[2]<<" no es un nombre de descriptor valido"<<endl;
+		cout<<"Descriptores: BRIEF,BRISK,FREAK,(...)"<<endl;
+		return 0;
+	}
+
+
+	//Dibujar kpts en las dos imagenes
+
+	drawKeypoints(src_1, keypoints_1, src_1);
+	drawKeypoints(src_2, keypoints_2, src_2);
+	imshow("keypoints",src_1);
+	imshow("keypoints_2",src_2);
+
 
 	//Matching
 	BFMatcher matcher(NORM_HAMMING);
