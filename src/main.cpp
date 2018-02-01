@@ -83,15 +83,15 @@ double calc_description(Ptr<Feature2D> extractor, Mat &img, vector<KeyPoint> &ke
 	else return 0;
 }
 
+
+
+
+
 int main(int argc, char** argv)
 {
-	Mat descriptors_1, descriptors_2;
-	Mat src_1,src_2;
-	double t1,t2,tdet,tdesc,tmatch;
-
-	constexpr int warmups = 30;
-	constexpr int runs = 100;
 	constexpr bool multithread = true;
+	double t1,t2,tdet,tdesc=0,tmatch=0;
+	Mat src_1,src_2, descriptors_1, descriptors_2;
 
 	vector<KeyPoint> keypoints_1, keypoints_2;
 	int kpts;
@@ -144,7 +144,7 @@ int main(int argc, char** argv)
 
 		Ptr<FeatureDetector> detector = BRISK::create(130);
 		detector->detect(src_1, keypoints_1);
-		calc_detection(detector, src_1, keypoints_1, true);
+		tdet=calc_detection(detector, src_1, keypoints_1, true);
 		calc_detection(detector, src_2, keypoints_2, false);
 	}
 
@@ -155,7 +155,6 @@ int main(int argc, char** argv)
 		  cv::AgastFeatureDetector::create(int threshold = 10, bool nonmaxSuppression = true,
 		  int type = AgastFeatureDetector::OAST_9_16)
 		 */
-
 		Ptr<FeatureDetector> detector = AgastFeatureDetector::create(130, false);
 		detector->detect(src_1, keypoints_1);
 		tdet=calc_detection(detector, src_1, keypoints_1, true);
@@ -326,8 +325,6 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-
-
 	//Dibujar kpts en las dos imagenes
 	drawKeypoints(src_1, keypoints_1, src_1);
 	drawKeypoints(src_2, keypoints_2, src_2);
@@ -394,7 +391,7 @@ int main(int argc, char** argv)
 	//file.open()
 	file<<argv[1]<<" + "<<argv[2]<<":"<<endl;
 	//file <<"Cantidad de Keypoints: "<< keypoints.size() << endl;
-	file <<"Cantidad de Keypoints: "<< kpts << endl;
+	file <<"Cantidad de Keypoints: "<< keypoints_1.size() << endl;
 	file<<"Descriptor size: "<<descriptors_1.size()<<endl;
 	file<<"Tiempo deteccion: "<<tdet<<" ms "<<endl;
 	file<<"Tiempo descripcion: "<<tdesc<<" ms "<<endl;
@@ -404,7 +401,6 @@ int main(int argc, char** argv)
 	file<<"Good matches: "<<good_matches.size()<<endl<<endl;
 	//file<<"Matches correctos (inliers): "<<	homography_matches.size() <<
 		//" ("<<100.f * (float) homography_matches.size() / (float) good_matches.size()<<"%)"<<endl<<endl;
-
 	waitKey(0);
 	return 0;
 }
