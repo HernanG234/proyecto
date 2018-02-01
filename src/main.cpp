@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <string>
+#include <fstream>
 
 
 // OpenCv headers
@@ -23,49 +24,68 @@ using namespace xfeatures2d;
 
 static const float nn_ratio_threshold = 0.8f;
 
-void calc_detection(Ptr<FeatureDetector> detector, Mat &img, vector<KeyPoint> &keypoints, bool gettime)
+double calc_detection(Ptr<FeatureDetector> detector, Mat &img, vector<KeyPoint> &keypoints, bool gettime)
 {
-	double t1,t2,tdet;
+	double t1,t2,tdet=0;
 
 	if (gettime)
 	{
-		t1 = cv::getTickCount();
-		detector->detect(img, keypoints);
-		t2 = cv::getTickCount();
-		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		for(int i=0; i<10;i++){
+			t1 = cv::getTickCount();
+			detector->detect(img, keypoints);
+			t2 = cv::getTickCount();
+			tdet += 1000.0*(t2-t1) / cv::getTickFrequency();
+		}
+
+		tdet/=10;
 		cout <<"Cantidad de Keypoints: "<< keypoints.size() << endl;
 		cout << "Tiempo deteccion: " << tdet << " ms" << endl;
+		
 	}
 	else
 		detector->detect(img, keypoints);
+
+	if(gettime) return tdet;
+	else return 0;
 }
 
-void calc_description(Ptr<Feature2D> extractor, Mat &img, vector<KeyPoint> &keypoints, Mat &descriptors, bool gettime)
+double calc_description(Ptr<Feature2D> extractor, Mat &img, vector<KeyPoint> &keypoints, Mat &descriptors, bool gettime)
 {
-	double t1,t2,tdet;
+	double t1,t2,tdesc=0;
 
 	if (gettime) {
-		t1 = cv::getTickCount();
-		extractor->compute(img, keypoints, descriptors);
-		t2 = cv::getTickCount();
-		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
-		cout<<"Tiempo de descripcion: "<<tdet<<" ms"<<endl;
+		for(int i=0; i<10;i++){
+			t1 = cv::getTickCount();
+			extractor->compute(img, keypoints, descriptors);
+			t2 = cv::getTickCount();
+			tdesc += 1000.0*(t2-t1) / cv::getTickFrequency();
+		}
+		tdesc/=10;
+		cout<<"Tiempo de descripcion: "<<tdesc<<" ms"<<endl;
 	}
 	else
 		extractor->compute(img, keypoints, descriptors);
 
 	cout<<"Descriptor size: "<<descriptors.size()<<endl;
+
+	if(gettime) return tdesc;
+	else return 0;
 }
+
+
+
+
 
 int main(int argc, char** argv)
 {
-	double t1,t2,tdet;
+	double t1,t2,tdet,tdesc=0,tmatch=0;
 	Mat src_1,src_2, descriptors_1, descriptors_2;
 	vector<KeyPoint> keypoints_1, keypoints_2;
 	src_1 = imread("src/images/000000.png", CV_LOAD_IMAGE_GRAYSCALE);
 	src_2 = imread("src/images/000001.png", CV_LOAD_IMAGE_GRAYSCALE);
 	//src_1 = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
 	//src_2 = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
+
 
 	//Ayuda
 	if(argc!=3){
@@ -75,6 +95,7 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
+
 	//Si el detector es FAST
 	if( !strcmp("FAST", argv[1] )){
 		/* void FAST(InputArray image, vector<KeyPoint>& keypoints, int threshold, bool nonmaxSuppression=true )*/
@@ -82,8 +103,10 @@ int main(int argc, char** argv)
 		Ptr<FastFeatureDetector> detector=FastFeatureDetector::create(106);
 		//Ptr<FastFeatureDetector> detector_2=FastFeatureDetector::create(106);
 		detector->detect(src_1,keypoints_1,Mat());
-		calc_detection(detector, src_1, keypoints_1, true);
+		tdet=calc_detection(detector, src_1, keypoints_1, true);
+		//cout<< tdet<<endl;
 		calc_detection(detector, src_2, keypoints_2, false);
+		//cout<< tdet<<endl;
 	}
 
 	//Si el detector es ORB
@@ -95,7 +118,7 @@ int main(int argc, char** argv)
 
 		Ptr<FeatureDetector> detector = ORB::create();
 		detector->detect(src_1, keypoints_1);
-		calc_detection(detector, src_1, keypoints_1, true);
+		tdet=calc_detection(detector, src_1, keypoints_1, true);
 		calc_detection(detector, src_2, keypoints_2, false);
 	}
 
@@ -110,7 +133,7 @@ int main(int argc, char** argv)
 		//tarda lo mismo en detectar 500 o 1000 puntos
 		Ptr<FeatureDetector> detector = GFTTDetector::create(500);
 		detector->detect(src_1, keypoints_1);
-		calc_detection(detector, src_1, keypoints_1, true);
+		tdet=calc_detection(detector, src_1, keypoints_1, true);
 		calc_detection(detector, src_2, keypoints_2, false);
 	}
 
@@ -130,7 +153,7 @@ int main(int argc, char** argv)
 		Ptr<BriefDescriptorExtractor> featureExtractor = BriefDescriptorExtractor::create();
 		//Ptr<BriefDescriptorExtractor> featureExtractor_2 = BriefDescriptorExtractor::create();
 
-		calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
+		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
 	}
 
@@ -141,7 +164,7 @@ int main(int argc, char** argv)
 
 		Ptr<Feature2D> featureExtractor = BRISK::create();
 
-		calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
+		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
 	}
 
@@ -152,8 +175,8 @@ int main(int argc, char** argv)
  		float patternScale=22.0f, int 	nOctaves=4, const std::vector< int > &selectedPairs=std::vector< int >())*/
 
 		Ptr<Feature2D> featureExtractor = FREAK::create();
-
-		calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
+		//extractor->compute(src_1, keypoints_1, descriptors_1);
+		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
 	}
 
@@ -165,7 +188,7 @@ int main(int argc, char** argv)
 									fastThreshold=20)*/
 		Ptr<Feature2D> featureExtractor = ORB::create();
 
-		calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
+		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
 	}
 
@@ -174,13 +197,16 @@ int main(int argc, char** argv)
 		//LDB(int _bytes = 32, int _nlevels = 3, int _patchSize = 60);
 		//Feature2D featureExtractor = LdbDescriptorExtractor::create();
 
-		double t1, t2, tdet;
+		//double t1, t2, tdesc;
 		LDB featureExtractor(48);
 		LDB featureExtractor2(48);
-		t1 = cv::getTickCount();
-		featureExtractor.compute(src_1, keypoints_1, descriptors_1, 0);
-		t2 = cv::getTickCount();
-		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		for(int i=0;i<10;i++){
+			t1 = cv::getTickCount();
+			featureExtractor.compute(src_1, keypoints_1, descriptors_1, 0);
+			t2 = cv::getTickCount();
+			tdesc += 1000.0*(t2-t1) / cv::getTickFrequency();
+		}
+		tdesc/=10;
 		cout <<"Cantidad de Keypoints: "<< keypoints_1.size() << endl;
 		cout << "Tiempo descripcion: " << tdet << " ms" << endl;
 		featureExtractor2.compute(src_2, keypoints_2, descriptors_2, 0);
@@ -203,15 +229,18 @@ int main(int argc, char** argv)
 
 	//Matching
 	BFMatcher matcher(NORM_HAMMING);
-	vector<vector<DMatch> > matches;
-	t1 = cv::getTickCount();
-	matcher.knnMatch(descriptors_1, descriptors_2, matches, 2);
-	t2 = cv::getTickCount();
-	tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+	vector<vector<DMatch> > matches,matches_1;
+	for(int i=0;i<20;i++){
+		t1 = cv::getTickCount();
+		matcher.knnMatch(descriptors_1, descriptors_2, matches_1, 2);
+		t2 = cv::getTickCount();
+		tmatch += 1000.0*(t2-t1) / cv::getTickFrequency();
+	}
+	tmatch/= 20;
 	cout<<"Matching: "<< descriptors_1.rows<<" descriptores (imagen 1), contra "<< descriptors_2.rows<<" descriptores (imagen 2)"<<endl;
-	cout << "Tiempo de matching: " << tdet << " ms" << endl;
-
-	cout << "Matches: " << matches.size()<<endl;
+	cout << "Tiempo de matching: " << tmatch << " ms" << endl;
+	matcher.knnMatch(descriptors_1, descriptors_2, matches, 2);
+	//cout << "Matches: " << matches.size()<<endl;
 	vector<DMatch> good_matches;
 	for(unsigned int i = 0; i < matches.size(); i++ )
 		if (matches[i][0].distance<nn_ratio_threshold *matches[i][1].distance)
@@ -253,6 +282,21 @@ int main(int argc, char** argv)
 	// Save Image
 	imwrite("matches.png", img_matches);
 
+	//Archivo para guardar resultados
+	ofstream file("Resultados.txt", ios_base::app);
+	//file.open()
+	file<<argv[1]<<" + "<<argv[2]<<":"<<endl;
+	//file <<"Cantidad de Keypoints: "<< keypoints.size() << endl;
+	file <<"Cantidad de Keypoints: "<< keypoints_1.size() << endl;
+	file<<"Descriptor size: "<<descriptors_1.size()<<endl;
+	file<<"Tiempo deteccion: "<<tdet<<" ms "<<endl;
+	file<<"Tiempo descripcion: "<<tdesc<<" ms "<<endl;
+	file<<"Tiempo descripcion por keypoint: "<<tdesc*1000/descriptors_1.rows<<" us "<<endl;
+	file<<"Tiempo Match: "<<tmatch<<" ms "<<endl;
+	file<<"Good matches: "<<good_matches.size()<<endl<<endl;
+	//file<<"Matches correctos (inliers): "<<	homography_matches.size() <<
+		//" ("<<100.f * (float) homography_matches.size() / (float) good_matches.size()<<"%)"<<endl<<endl;
+	
 	waitKey(0);
 	return 0;
 }
