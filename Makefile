@@ -1,22 +1,25 @@
+IDIR = ./inc
 CC=g++
-
+CFLAGS=-I$(IDIR) -Wall `pkg-config opencv --cflags`
+LDFLAGS = `pkg-config opencv --libs`
 SOURCES=$(wildcard src/*.cpp)
 OBJECTS=$(SOURCES:.cpp=.o)
-EXECUTABLE=test
+EXECUTABLE = test
 
-CFLAGS = -Wall `pkg-config opencv --cflags`
 LDFLAGS = `pkg-config opencv --libs`
 
-all: $(EXECUTABLE)
+DEPS = $(wildcard inc/*.h)
 
-debug: CFLAGS += -g -O0 -Wextra
-debug: $(EXECUTABLE)
+#_OBJ = ldb.o
+#OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
+
+src/%.o: src/%.cpp $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS) $(LDFLAGS)
 
 $(EXECUTABLE): $(SOURCES) $(OBJECTS)
-	$(CC) $(OBJECTS) $(LDFLAGS) -o $@ 
+	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 
-.cpp.o:
-	$(CC) -c $(CFLAGS) $< -o $@
+.PHONY: clean
 
 clean:
-	rm -rf $(OBJECTS) $(EXECUTABLE)
+	rm -f $(OBJECTS) $(EXECUTABLE)

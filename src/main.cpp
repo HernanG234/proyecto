@@ -15,6 +15,8 @@
 //#include <opencv2/nonfree/features2d.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 
+#include "ldb.h"
+
 using namespace std;
 using namespace cv;
 using namespace xfeatures2d;
@@ -119,9 +121,7 @@ int main(int argc, char** argv)
 	}
 
 	//Descriptores
-
 	//Si el descriptor es BRIEF
-
 
 	if( !strcmp("BRIEF", argv[2] )){
 		/*Parametros por defecto:
@@ -167,6 +167,26 @@ int main(int argc, char** argv)
 
 		calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
+	}
+
+	//Si el descriptor es LDB
+	else if( !strcmp("LDB", argv[2] )){
+		//LDB(int _bytes = 32, int _nlevels = 3, int _patchSize = 60);
+		//Feature2D featureExtractor = LdbDescriptorExtractor::create();
+
+		double t1, t2, tdet;
+		LDB featureExtractor(48);
+		LDB featureExtractor2(48);
+		t1 = cv::getTickCount();
+		featureExtractor.compute(src_1, keypoints_1, descriptors_1, 0);
+		t2 = cv::getTickCount();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout <<"Cantidad de Keypoints: "<< keypoints_1.size() << endl;
+		cout << "Tiempo descripcion: " << tdet << " ms" << endl;
+		featureExtractor2.compute(src_2, keypoints_2, descriptors_2, 0);
+		cout<<"Descriptor size: "<<descriptors_1.size()<<endl;
+		//calc_description(&featureExtractor, src_1, keypoints_1, descriptors_1, true);
+		//calc_description(&featureExtractor, src_2, keypoints_2, descriptors_2, false);
 	}
 
 	else{
@@ -228,7 +248,7 @@ int main(int argc, char** argv)
 		" ("<<100.f * (float) homography_matches.size() / (float) good_matches.size()<<"%)"<<endl;
 	// Draw matches
 	Mat img_matches;
-	drawMatches( src_1, keypoints_1, src_2, keypoints_2, homography_matches, img_matches);
+	drawMatches( src_1, keypoints_1, src_2, keypoints_2, good_matches, img_matches);
 	imshow("matches",img_matches);
 	// Save Image
 	imwrite("matches.png", img_matches);
