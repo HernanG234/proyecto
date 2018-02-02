@@ -109,7 +109,34 @@ int main(int argc, char** argv)
 		int nlevels=8, int edgeThreshold=31, int firstLevel=0,
 		int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31)*/
 
-		Ptr<FeatureDetector> detector = ORB::create();
+		Ptr<FeatureDetector> detector = ORB::create(1000);
+		detector->detect(src_1, keypoints_1);
+		calc_detection(detector, src_1, keypoints_1, true);
+		calc_detection(detector, src_2, keypoints_2, false);
+	}
+
+	//Si el detector es BRISK
+	else if( !strcmp("BRISK", argv[1] )){
+		/*Parametros por defecto:
+		BUSCAR PARAMETROS POR DEFECTO BRISK
+		*/
+
+		Ptr<FeatureDetector> detector = BRISK::create(130);
+		detector->detect(src_1, keypoints_1);
+		calc_detection(detector, src_1, keypoints_1, true);
+		calc_detection(detector, src_2, keypoints_2, false);
+	}
+
+
+	//Si el detector es AGAST
+	else if( !strcmp("AGAST", argv[1] )){
+		/*Parametros por defecto:
+
+		  cv::AgastFeatureDetector::create(int threshold = 10, bool nonmaxSuppression = true,
+		  int type = AgastFeatureDetector::OAST_9_16)
+		 */
+
+		Ptr<FeatureDetector> detector = AgastFeatureDetector::create(130, false);
 		detector->detect(src_1, keypoints_1);
 		calc_detection(detector, src_1, keypoints_1, true);
 		calc_detection(detector, src_2, keypoints_2, false);
@@ -118,10 +145,10 @@ int main(int argc, char** argv)
 	//Si el detector es GFTT
 	else if( !strcmp("GFTT", argv[1] )){
 		/*Parametros por defecto:
-		static Ptr< GFTTDetector > 	create (int maxCorners=1000,
-											double qualityLevel=0.01,
-											double minDistance=1, int blockSize=3,
-											bool useHarrisDetector=false, double k=0.04)*/
+		  static Ptr< GFTTDetector > 	create (int maxCorners=1000,
+		  double qualityLevel=0.01,
+		  double minDistance=1, int blockSize=3,
+		  bool useHarrisDetector=false, double k=0.04)*/
 
 		//tarda lo mismo en detectar 500 o 1000 puntos
 		Ptr<FeatureDetector> detector = GFTTDetector::create(500);
@@ -141,7 +168,7 @@ int main(int argc, char** argv)
 
 	if( !strcmp("BRIEF", argv[2] )){
 		/*Parametros por defecto:
-		static Ptr< BriefDescriptorExtractor > 	create (int bytes=32, bool use_orientation=false)*/
+		  static Ptr< BriefDescriptorExtractor > 	create (int bytes=32, bool use_orientation=false)*/
 
 		Ptr<BriefDescriptorExtractor> featureExtractor = BriefDescriptorExtractor::create();
 		//Ptr<BriefDescriptorExtractor> featureExtractor_2 = BriefDescriptorExtractor::create();
@@ -153,8 +180,7 @@ int main(int argc, char** argv)
 	//Si el descriptor es BRISK
 	else if( !strcmp("BRISK", argv[2] )){
 		/*Parametros por defecto:
-		BRISK::BRISK(int thresh=30, int octaves=3, float patternScale=1.0f)*/
-
+		  BRISK::BRISK(int thresh=30, int octaves=3, float patternScale=1.0f)*/
 		Ptr<Feature2D> featureExtractor = BRISK::create();
 
 		calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
@@ -165,7 +191,7 @@ int main(int argc, char** argv)
 	else if( !strcmp("FREAK", argv[2] )){
 
 		/*static Ptr< FREAK > 	create (bool orientationNormalized=true, bool scaleNormalized=true,
- 		float patternScale=22.0f, int 	nOctaves=4, const std::vector< int > &selectedPairs=std::vector< int >())*/
+		  float patternScale=22.0f, int 	nOctaves=4, const std::vector< int > &selectedPairs=std::vector< int >())*/
 
 		Ptr<Feature2D> featureExtractor = FREAK::create();
 
