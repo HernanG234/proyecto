@@ -83,10 +83,6 @@ double calc_description(Ptr<Feature2D> extractor, Mat &img, vector<KeyPoint> &ke
 	else return 0;
 }
 
-
-
-
-
 int main(int argc, char** argv)
 {
 	constexpr bool multithread = true;
@@ -194,6 +190,7 @@ int main(int argc, char** argv)
 		cout<<"Detectores: FAST,ORB,GFTT,BAFT"<<endl;
 		return 0;
 	}
+	kpts=keypoints_1.size();
 
 	kpts=keypoints_1.size();
 
@@ -391,7 +388,7 @@ int main(int argc, char** argv)
 	//file.open()
 	file<<argv[1]<<" + "<<argv[2]<<":"<<endl;
 	//file <<"Cantidad de Keypoints: "<< keypoints.size() << endl;
-	file <<"Cantidad de Keypoints: "<< keypoints_1.size() << endl;
+	file <<"Cantidad de Keypoints: "<< kpts << endl;
 	file<<"Descriptor size: "<<descriptors_1.size()<<endl;
 	file<<"Tiempo deteccion: "<<tdet<<" ms "<<endl;
 	file<<"Tiempo descripcion: "<<tdesc<<" ms "<<endl;
