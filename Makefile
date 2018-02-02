@@ -1,12 +1,10 @@
 IDIR = ./inc
 CC=g++
-CFLAGS=-I$(IDIR) -Wall `pkg-config opencv --cflags`
-LDFLAGS = `pkg-config opencv --libs`
+CFLAGS=-I$(IDIR) -Wall `pkg-config opencv --cflags` -Wextra -pedantic -Ofast -std=gnu++17 -fomit-frame-pointer -mavx2 -march=native -mfma -flto -funroll-all-loops -fpeel-loops -ftracer -ftree-vectorize
+LDFLAGS = `pkg-config opencv --libs` -lpthread
 SOURCES=$(wildcard src/*.cpp)
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE = test
-
-LDFLAGS = `pkg-config opencv --libs`
 
 DEPS = $(wildcard inc/*.h)
 
