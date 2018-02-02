@@ -14,8 +14,18 @@
 #include <opencv2/features2d.hpp>
 //#include <opencv2/nonfree/features2d.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
+#include <bitset>
+#include <chrono>
+#include <iostream>
+#include <opencv2/opencv.hpp>
+#include <vector>
+
 
 #include "ldb.h"
+#include "LATCHK.h"
+
+#define VC_EXTRALEAN
+#define WIN32_LEAN_AND_MEAN
 
 using namespace std;
 using namespace cv;
@@ -59,8 +69,14 @@ void calc_description(Ptr<Feature2D> extractor, Mat &img, vector<KeyPoint> &keyp
 
 int main(int argc, char** argv)
 {
+	Mat descriptors_1, descriptors_2;
+	Mat src_1,src_2;
 	double t1,t2,tdet;
-	Mat src_1,src_2, descriptors_1, descriptors_2;
+
+	constexpr int warmups = 30;
+	constexpr int runs = 100;
+	constexpr bool multithread = true;
+
 	vector<KeyPoint> keypoints_1, keypoints_2;
 	src_1 = imread("src/images/000000.png", CV_LOAD_IMAGE_GRAYSCALE);
 	src_2 = imread("src/images/000001.png", CV_LOAD_IMAGE_GRAYSCALE);
@@ -71,7 +87,7 @@ int main(int argc, char** argv)
 	if(argc!=3){
 		cout<<"Modo de uso: ./ejecutable <detector> <descriptor>"<<endl;
 		cout<<"Detector: FAST, ORB o GFTT"<<endl;
-		cout<<"Descriptor:BRIEF, BRISK, FREAK ,(los que probemos)"<<endl;
+		cout<<"Descriptor: BRIEF, BRISK, FREAK ,(los que probemos)"<<endl;
 		return 0;
 	}
 
@@ -159,14 +175,54 @@ int main(int argc, char** argv)
 
 	//Si el descriptor es ORB
 	else if( !strcmp("ORB", argv[2] )){
-
 		/*static Ptr< ORB >	create (int nfeatures=500, float scaleFactor=1.2f, int nlevels=8, int edgeThreshold=31, int
-									firstLevel=0, int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31, int
-									fastThreshold=20)*/
+		  firstLevel=0, int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31, int
+		  fastThreshold=20)*/
 		Ptr<Feature2D> featureExtractor = ORB::create();
 
 		calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
+	}
+
+	//Si el descriptor es LATCH
+	else if( !strcmp("LATCH", argv[2] )){
+		/*static Ptr<LATCH> cv::xfeatures2d::LATCH::create(int bytes = 32,
+		 *bool rotationInvariance = true, int half_ssd_size = 3, double sigma = 2.0)		
+		 */
+		Ptr<Feature2D> featureExtractor = LATCH::create();
+
+		calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
+		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
+	}
+
+	// ------------- LATCH ------------
+	else if( !strcmp("LATCHK", argv[2] )){
+		uint64_t* desc_1 = new uint64_t[8 * keypoints_1.size()];
+		std::vector<KeyPointK> kps1;
+		for (auto&& kp : keypoints_1) kps1.emplace_back(kp.pt.x, kp.pt.y, kp.size, kp.angle * 3.14159265f / 180.0f);
+		std::cout << "Warming up..." << std::endl;
+		for (int i = 0; i < warmups; ++i)
+			LATCHK<multithread>(src_1.data, src_1.cols, src_1.rows, static_cast<int>(src_1.step), kps1, desc_1);
+		std::cout << "Testing..." << std::endl;
+		t1 = cv::getTickCount();
+		for (int i = 0; i < runs; ++i)
+			LATCHK<multithread>(src_1.data, src_1.cols, src_1.rows, static_cast<int>(src_1.step), kps1, desc_1);
+		t2 = cv::getTickCount();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Tiempo de descripcion: "<<tdet<<" ms"<<endl;
+		// --------------------------------
+
+		// ------------- LATCH ------------
+		uint64_t* desc_2 = new uint64_t[8 * keypoints_2.size()];
+		std::vector<KeyPointK> kps2;
+		for (auto&& kp : keypoints_2) kps2.emplace_back(kp.pt.x, kp.pt.y, kp.size, kp.angle * 3.14159265f / 180.0f);
+		std::cout << "Warming up..." << std::endl;
+		for (int i = 0; i < warmups; ++i)
+			LATCHK<multithread>(src_2.data, src_2.cols, src_2.rows, static_cast<int>(src_2.step), kps2, desc_2);
+		std::cout << "Testing..." << std::endl;
+		for (int i = 0; i < runs; ++i)
+			LATCHK<multithread>(src_2.data, src_2.cols, src_2.rows, static_cast<int>(src_2.step), kps2, desc_2);
+		// -------------------------------- 
 	}
 
 	//Si el descriptor es LDB
@@ -174,7 +230,6 @@ int main(int argc, char** argv)
 		//LDB(int _bytes = 32, int _nlevels = 3, int _patchSize = 60);
 		//Feature2D featureExtractor = LdbDescriptorExtractor::create();
 
-		double t1, t2, tdet;
 		LDB featureExtractor(48);
 		LDB featureExtractor2(48);
 		t1 = cv::getTickCount();
