@@ -87,7 +87,7 @@ int main(int argc, char** argv)
 {
 	Mat descriptors_1, descriptors_2;
 	Mat src_1,src_2;
-	double t1,t2,tdet;
+	double t1,t2,tdet,tdesc,tmatch;
 
 	constexpr int warmups = 30;
 	constexpr int runs = 100;
@@ -250,39 +250,43 @@ int main(int argc, char** argv)
 		/*static Ptr<LATCH> cv::xfeatures2d::LATCH::create(int bytes = 32,
 		 *bool rotationInvariance = true, int half_ssd_size = 3, double sigma = 2.0)		
 		 */
-		Ptr<Feature2D> featureExtractor = LATCH::create();
+		Ptr<Feature2D> featureExtractor = LATCH::create(64);
 
 		calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
+		cout << "Descriptor OpenCV LATCH size: " << descriptors_1.size() << endl;
+		cout << descriptors_2.row(0) << endl;
 	}
 
-	// ------------- LATCH ------------
+	// ------------- LATCHK ------------
 	else if( !strcmp("LATCHK", argv[2] )){
 		uint64_t* desc_1 = new uint64_t[8 * keypoints_1.size()];
 		std::vector<KeyPointK> kps1;
 		for (auto&& kp : keypoints_1) kps1.emplace_back(kp.pt.x, kp.pt.y, kp.size, kp.angle * 3.14159265f / 180.0f);
 		std::cout << "Warming up..." << std::endl;
-		for (int i = 0; i < warmups; ++i)
-			LATCHK<multithread>(src_1.data, src_1.cols, src_1.rows, static_cast<int>(src_1.step), kps1, desc_1);
+		LATCHK<multithread>(src_1.data, src_1.cols, src_1.rows, static_cast<int>(src_1.step), kps1, desc_1);
 		std::cout << "Testing..." << std::endl;
 		t1 = cv::getTickCount();
-		for (int i = 0; i < runs; ++i)
-			LATCHK<multithread>(src_1.data, src_1.cols, src_1.rows, static_cast<int>(src_1.step), kps1, desc_1);
+		LATCHK<multithread>(src_1.data, src_1.cols, src_1.rows, static_cast<int>(src_1.step), kps1, desc_1);
+		for (size_t i=0; i < 8 * kps1.size(); ++i)
+			desc_1[i] =  __builtin_bswap64 (desc_1[i]);
+		descriptors_1 = Mat(keypoints_1.size(), 64, CV_8U, desc_1, 64);
 		t2 = cv::getTickCount();
 		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
 		cout<<"Tiempo de descripcion: "<<tdet<<" ms"<<endl;
 		// --------------------------------
 
-		// ------------- LATCH ------------
+		// ------------- LATCHK ------------
 		uint64_t* desc_2 = new uint64_t[8 * keypoints_2.size()];
 		std::vector<KeyPointK> kps2;
 		for (auto&& kp : keypoints_2) kps2.emplace_back(kp.pt.x, kp.pt.y, kp.size, kp.angle * 3.14159265f / 180.0f);
 		std::cout << "Warming up..." << std::endl;
-		for (int i = 0; i < warmups; ++i)
-			LATCHK<multithread>(src_2.data, src_2.cols, src_2.rows, static_cast<int>(src_2.step), kps2, desc_2);
+		LATCHK<multithread>(src_2.data, src_2.cols, src_2.rows, static_cast<int>(src_2.step), kps2, desc_2);
 		std::cout << "Testing..." << std::endl;
-		for (int i = 0; i < runs; ++i)
-			LATCHK<multithread>(src_2.data, src_2.cols, src_2.rows, static_cast<int>(src_2.step), kps2, desc_2);
+		LATCHK<multithread>(src_2.data, src_2.cols, src_2.rows, static_cast<int>(src_2.step), kps2, desc_2);
+		for (size_t i=0; i < 8 * kps2.size(); ++i)
+			desc_2[i] =  __builtin_bswap64 (desc_2[i]);
+		descriptors_2 = Mat(keypoints_2.size(), 64, CV_8U, desc_2, 64);
 		// -------------------------------- 
 	}
 
@@ -291,8 +295,8 @@ int main(int argc, char** argv)
 		//LDB(int _bytes = 32, int _nlevels = 3, int _patchSize = 60);
 		//Feature2D featureExtractor = LdbDescriptorExtractor::create();
 
-		LDB featureExtractor(48);
-		LDB featureExtractor2(48);
+		LDB featureExtractor(32);
+		t1 = cv::getTickCount();
 		featureExtractor.compute(src_1, keypoints_1, descriptors_1, 0);
 		for(int i=0;i<30;i++){
 			t1 = cv::getTickCount();
@@ -302,8 +306,8 @@ int main(int argc, char** argv)
 		}
 		tdesc/=30;
 		cout <<"Cantidad de Keypoints: "<< keypoints_1.size() << endl;
-		cout << "Tiempo descripcion: " << tdesc << " ms" << endl;
-		featureExtractor2.compute(src_2, keypoints_2, descriptors_2, 0);
+		cout << "Tiempo descripcion: " << tdet << " ms" << endl;
+		featureExtractor.compute(src_2, keypoints_2, descriptors_2, 0);
 		cout<<"Descriptor size: "<<descriptors_1.size()<<endl;
 		//calc_description(&featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		//calc_description(&featureExtractor, src_2, keypoints_2, descriptors_2, false);
