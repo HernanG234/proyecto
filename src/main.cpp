@@ -235,7 +235,7 @@ int main(int argc, char** argv)
 		/*static Ptr< ORB >	create (int nfeatures=500, float scaleFactor=1.2f, int nlevels=8, int edgeThreshold=31, int
 		  firstLevel=0, int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31, int
 		  fastThreshold=20)*/
-		Ptr<Feature2D> featureExtractor = ORB::create();
+		Ptr<Feature2D> featureExtractor = ORB::create(500);
 
 		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
@@ -259,16 +259,15 @@ int main(int argc, char** argv)
 		uint64_t* desc_1 = new uint64_t[8 * keypoints_1.size()];
 		std::vector<KeyPointK> kps1;
 		for (auto&& kp : keypoints_1) kps1.emplace_back(kp.pt.x, kp.pt.y, kp.size, kp.angle * 3.14159265f / 180.0f);
-		std::cout << "Warming up..." << std::endl;
 		LATCHK<multithread>(src_1.data, src_1.cols, src_1.rows, static_cast<int>(src_1.step), kps1, desc_1);
-		std::cout << "Testing..." << std::endl;
 		t1 = cv::getTickCount();
-		LATCHK<multithread>(src_1.data, src_1.cols, src_1.rows, static_cast<int>(src_1.step), kps1, desc_1);
+		for (int i=0; i<30; i++)
+			LATCHK<multithread>(src_1.data, src_1.cols, src_1.rows, static_cast<int>(src_1.step), kps1, desc_1);
 		for (size_t i=0; i < 8 * kps1.size(); ++i)
 			desc_1[i] =  __builtin_bswap64 (desc_1[i]);
 		descriptors_1 = Mat(keypoints_1.size(), 64, CV_8U, desc_1, 64);
 		t2 = cv::getTickCount();
-		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency() / 30;
 		cout<<"Tiempo de descripcion: "<<tdet<<" ms"<<endl;
 		// --------------------------------
 
@@ -276,9 +275,7 @@ int main(int argc, char** argv)
 		uint64_t* desc_2 = new uint64_t[8 * keypoints_2.size()];
 		std::vector<KeyPointK> kps2;
 		for (auto&& kp : keypoints_2) kps2.emplace_back(kp.pt.x, kp.pt.y, kp.size, kp.angle * 3.14159265f / 180.0f);
-		std::cout << "Warming up..." << std::endl;
 		LATCHK<multithread>(src_2.data, src_2.cols, src_2.rows, static_cast<int>(src_2.step), kps2, desc_2);
-		std::cout << "Testing..." << std::endl;
 		LATCHK<multithread>(src_2.data, src_2.cols, src_2.rows, static_cast<int>(src_2.step), kps2, desc_2);
 		for (size_t i=0; i < 8 * kps2.size(); ++i)
 			desc_2[i] =  __builtin_bswap64 (desc_2[i]);
