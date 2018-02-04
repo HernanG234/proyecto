@@ -27,6 +27,7 @@
 
 #define VC_EXTRALEAN
 #define WIN32_LEAN_AND_MEAN
+#include "baft.h"
 
 using namespace std;
 using namespace cv;
@@ -50,7 +51,6 @@ double calc_detection(Ptr<FeatureDetector> detector, Mat &img, vector<KeyPoint> 
 		tdet/=30;
 		cout <<"Cantidad de Keypoints: "<< keypoints.size() << endl;
 		cout << "Tiempo deteccion: " << tdet << " ms" << endl;
-		
 	}
 	else
 		detector->detect(img, keypoints);
@@ -83,10 +83,6 @@ double calc_description(Ptr<Feature2D> extractor, Mat &img, vector<KeyPoint> &ke
 	else return 0;
 }
 
-
-
-
-
 int main(int argc, char** argv)
 {
 	Mat descriptors_1, descriptors_2;
@@ -101,9 +97,10 @@ int main(int argc, char** argv)
 	int kpts;
 	src_1 = imread("src/images/000000.png", CV_LOAD_IMAGE_GRAYSCALE);
 	src_2 = imread("src/images/000001.png", CV_LOAD_IMAGE_GRAYSCALE);
+	//src_1 = imread("src/images/000106.png", CV_LOAD_IMAGE_GRAYSCALE);
+	//src_2 = imread("src/images/000107.png", CV_LOAD_IMAGE_GRAYSCALE);
 	//src_1 = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
 	//src_2 = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
-
 
 	//Ayuda
 	if(argc!=3){
@@ -112,7 +109,6 @@ int main(int argc, char** argv)
 		cout<<"Descriptor: BRIEF, BRISK, FREAK ,(los que probemos)"<<endl;
 		return 0;
 	}
-
 
 	//Si el detector es FAST
 	if( !strcmp("FAST", argv[1] )){
@@ -152,7 +148,6 @@ int main(int argc, char** argv)
 		calc_detection(detector, src_2, keypoints_2, false);
 	}
 
-
 	//Si el detector es AGAST
 	else if( !strcmp("AGAST", argv[1] )){
 		/*Parametros por defecto:
@@ -182,12 +177,25 @@ int main(int argc, char** argv)
 		calc_detection(detector, src_2, keypoints_2, false);
 	}
 
+		//Si el detector es BAFT
+	else if( !strcmp("BAFT", argv[1] )){
+		/*Parametros por defecto:
+		ORB(int nfeatures=500, float scaleFactor=1.2f,
+		int nlevels=8, int edgeThreshold=31, int firstLevel=0,
+		int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31)*/
+
+		Ptr<Feature2D> detector = BAFT::create(500,64);
+		detector->detect(src_1, keypoints_1);
+		tdet=calc_detection(detector, src_1, keypoints_1, true);
+		calc_detection(detector, src_2, keypoints_2, false);
+	}
+
 	else{
 		cout<<argv[1]<<" no es un nombre de detector valido"<<endl;
-		cout<<"Detectores: FAST,ORB o GFTT"<<endl;
+		cout<<"Detectores: FAST,ORB,GFTT,BAFT"<<endl;
 		return 0;
 	}
-	
+
 	kpts=keypoints_1.size();
 
 	//Descriptores
@@ -301,11 +309,20 @@ int main(int argc, char** argv)
 		//calc_description(&featureExtractor, src_2, keypoints_2, descriptors_2, false);
 	}
 
+	//si el descriptor es BAFT
+	else if(!strcmp("BAFT", argv[2])){
+		Ptr<Feature2D> featureExtractor = BAFT::create(500,64);
+		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
+		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
+	}
+
 	else{
 		cout<<argv[2]<<" no es un nombre de descriptor valido"<<endl;
-		cout<<"Descriptores: BRIEF,BRISK,FREAK,(...)"<<endl;
+		cout<<"Descriptores: BRIEF,BRISK,FREAK,LATCH,LDB,BAFT,(...)"<<endl;
 		return 0;
 	}
+
+
 
 	//Dibujar kpts en las dos imagenes
 	drawKeypoints(src_1, keypoints_1, src_1);
@@ -383,7 +400,7 @@ int main(int argc, char** argv)
 	file<<"Good matches: "<<good_matches.size()<<endl<<endl;
 	//file<<"Matches correctos (inliers): "<<	homography_matches.size() <<
 		//" ("<<100.f * (float) homography_matches.size() / (float) good_matches.size()<<"%)"<<endl<<endl;
-	
+
 	waitKey(0);
 	return 0;
 }
