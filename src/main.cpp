@@ -17,6 +17,7 @@
 #include <opencv2/calib3d/calib3d.hpp>
 
 #include "ldb.h"
+#include "baft.h"
 
 using namespace std;
 using namespace cv;
@@ -85,6 +86,8 @@ int main(int argc, char** argv)
 	int kpts;
 	src_1 = imread("src/images/000000.png", CV_LOAD_IMAGE_GRAYSCALE);
 	src_2 = imread("src/images/000001.png", CV_LOAD_IMAGE_GRAYSCALE);
+	//src_1 = imread("src/images/000106.png", CV_LOAD_IMAGE_GRAYSCALE);
+	//src_2 = imread("src/images/000107.png", CV_LOAD_IMAGE_GRAYSCALE);
 	//src_1 = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
 	//src_2 = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
 
@@ -139,9 +142,22 @@ int main(int argc, char** argv)
 		calc_detection(detector, src_2, keypoints_2, false);
 	}
 
+		//Si el detector es BAFT
+	else if( !strcmp("BAFT", argv[1] )){
+		/*Parametros por defecto:
+		ORB(int nfeatures=500, float scaleFactor=1.2f,
+		int nlevels=8, int edgeThreshold=31, int firstLevel=0,
+		int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31)*/
+
+		Ptr<Feature2D> detector = BAFT::create(500,64);
+		detector->detect(src_1, keypoints_1);
+		tdet=calc_detection(detector, src_1, keypoints_1, true);
+		calc_detection(detector, src_2, keypoints_2, false);
+	}
+
 	else{
 		cout<<argv[1]<<" no es un nombre de detector valido"<<endl;
-		cout<<"Detectores: FAST,ORB o GFTT"<<endl;
+		cout<<"Detectores: FAST,ORB,GFTT,BAFT"<<endl;
 		return 0;
 	}
 	
@@ -196,6 +212,17 @@ int main(int argc, char** argv)
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
 	}
 
+		//Si el descriptor es LATCH
+	else if( !strcmp("LATCH", argv[2] )){
+
+		
+		Ptr<Feature2D> featureExtractor = LATCH::create(64);
+
+		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
+		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
+	}
+	
+	
 	//Si el descriptor es LDB
 	else if( !strcmp("LDB", argv[2] )){
 		//LDB(int _bytes = 32, int _nlevels = 3, int _patchSize = 60);
@@ -220,11 +247,21 @@ int main(int argc, char** argv)
 		//calc_description(&featureExtractor, src_2, keypoints_2, descriptors_2, false);
 	}
 
+	//si el descriptor es BAFT
+	else if(!strcmp("BAFT", argv[2])){
+		Ptr<Feature2D> featureExtractor = BAFT::create(500,64);
+		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
+		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
+	
+	}
+
 	else{
 		cout<<argv[2]<<" no es un nombre de descriptor valido"<<endl;
-		cout<<"Descriptores: BRIEF,BRISK,FREAK,(...)"<<endl;
+		cout<<"Descriptores: BRIEF,BRISK,FREAK,LATCH,LDB,BAFT,(...)"<<endl;
 		return 0;
 	}
+
+
 
 	//Dibujar kpts en las dos imagenes
 	drawKeypoints(src_1, keypoints_1, src_1);

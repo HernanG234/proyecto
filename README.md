@@ -12,12 +12,16 @@ Run:
 - FAST
 - ORB
 - GFTT
+- BAFT
 
 ### Available Descriptors: ###
 - BRIEF
 - BRISK
 - FREAK
 - ORB
+- LATCH
+- LDB
+- BAFT
 
 ### TODO: ###
 - [x] Add Makefile
