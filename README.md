@@ -11,8 +11,11 @@ Run:
 ### Available Detectors: ###
 - FAST
 - ORB
+- BRISK
+- AGAST
 - GFTT
 - BAFT
+- LOCKY(S)
 
 ### Available Descriptors: ###
 - BRIEF
@@ -20,8 +23,10 @@ Run:
 - FREAK
 - ORB
 - LATCH
+- LATCHK
 - LDB
 - BAFT
+- BOLD
 
 ### TODO: ###
 - [x] Add Makefile
