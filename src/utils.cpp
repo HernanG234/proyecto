@@ -1,178 +1,65 @@
-/**
- * @file utils.cpp
- * @brief Some useful functions for displaying and matching features
- * @date May 24, 2014
- * @author Pablo F. Alcantarilla
- */
-
 #include "utils.h"
-#include <fstream>
 
-using namespace std;
-using namespace cv;
-
-/* ************************************************************************* */
-void draw_keypoints(cv::Mat& img, const std::vector<cv::KeyPoint>& kpts) {
-
-  int x = 0, y = 0;
-  float radius = 0.0;
-
-  for (size_t i = 0; i < kpts.size(); i++) {
-    x = (int)(kpts[i].pt.x+.5);
-    y = (int)(kpts[i].pt.y+.5);
-    radius = kpts[i].size/2.0;
-    cv::circle(img, cv::Point(x,y), 2.5*radius, cv::Scalar(0,255,0), 1);
-    cv::circle(img, cv::Point(x,y), 1.0, cv::Scalar(0,0,255), -1);
-  }
-}
-
-/* ************************************************************************* */
-cv::Mat read_homography(const std::string& homography_path) {
-
-  float h11 = 0.0, h12 = 0.0, h13 = 0.0;
-  float h21 = 0.0, h22 = 0.0, h23 = 0.0;
-  float h31 = 0.0, h32 = 0.0, h33 = 0.0;
-  int  tmp_buf_size = 256;
-  char tmp_buf[tmp_buf_size];
-
-  // Allocate memory for the OpenCV matrices
-  cv::Mat H1toN = cv::Mat::zeros(3, 3, CV_32FC1);
-
-  ifstream infile;
-  infile.exceptions(ifstream::eofbit | ifstream::failbit | ifstream::badbit );
-  infile.open(homography_path.c_str(),ifstream::in);
-
-  infile.getline(tmp_buf,tmp_buf_size);
-  sscanf(tmp_buf,"%f %f %f", &h11, &h12, &h13);
-
-  infile.getline(tmp_buf, tmp_buf_size);
-  sscanf(tmp_buf,"%f %f %f", &h21, &h22, &h23);
-
-  infile.getline(tmp_buf, tmp_buf_size);
-  sscanf(tmp_buf,"%f %f %f", &h31, &h32, &h33);
-
-  infile.close();
-
-  H1toN.at<float>(0,0) = h11 / h33;
-  H1toN.at<float>(0,1) = h12 / h33;
-  H1toN.at<float>(0,2) = h13 / h33;
-
-  H1toN.at<float>(1,0) = h21 / h33;
-  H1toN.at<float>(1,1) = h22 / h33;
-  H1toN.at<float>(1,2) = h23 / h33;
-
-  H1toN.at<float>(2,0) = h31 / h33;
-  H1toN.at<float>(2,1) = h32 / h33;
-  H1toN.at<float>(2,2) = h33 / h33;
-  return H1toN;
-}
-
-/* ************************************************************************* */
-void matches2points_nndr(const std::vector<cv::KeyPoint>& train,
-                         const std::vector<cv::KeyPoint>& query,
-                         const std::vector<std::vector<cv::DMatch> >& matches,
-                         std::vector<cv::Point2f>& pmatches, const float& nndr) {
-
-  float dist1 = 0.0, dist2 = 0.0;
-  for (size_t i = 0; i < matches.size(); i++) {
-    cv::DMatch dmatch = matches[i][0];
-    dist1 = (float)matches[i][0].distance;
-    dist2 = (float)matches[i][1].distance;
-
-    if (dist1 < nndr*dist2) {
-      pmatches.push_back(train[dmatch.queryIdx].pt);
-      pmatches.push_back(query[dmatch.trainIdx].pt);
+/* init the dataset: patches & ground truth  */
+void init_dataset(dataset *A,const char *path)
+{
+  /* read the # of images */
+  int numImgs=0;
+  DIR *dir;
+  struct dirent *ent;
+  dir = opendir(path);
+  if (dir != NULL) {
+    while ((ent = readdir (dir)) != NULL) {
+      char *ext = strrchr(ent->d_name, '.');
+      if (strcmp (ext,".pgm")==0)
+    {
+      numImgs++;
     }
-  }
-}
-
-/* ************************************************************************* */
-void compute_inliers_homography(const std::vector<cv::Point2f>& matches,
-                                std::vector<cv::Point2f>& inliers,
-                                const cv::Mat& H, const float h_max_error) {
-
-  float x1 = 0.0, y1 = 0.0;
-  float x2 = 0.0, y2 = 0.0;
-  float x2m = 0.0, y2m = 0.0;
-  float x1m = 0.0, y1m = 0.0;
-  float dist = 0.0;
-  Mat p1(3, 1, CV_32F), p2(3, 1, CV_32F), p1_t, p2_t;
-
-  inliers.clear();
-
-  for (size_t i = 0; i < matches.size(); i+=2) {
-    x1 = matches[i].x;
-    y1 = matches[i].y;
-    x2 = matches[i+1].x;
-    y2 = matches[i+1].y;
-
-    p1.at<float>(0) = x1;
-    p1.at<float>(1) = y1;
-    p1.at<float>(2) = 1;
-    p1_t = H * p1;
-    x2m = p1_t.at<float>(0) / p1_t.at<float>(2);
-    y2m = p1_t.at<float>(1) / p1_t.at<float>(2);
-
-    p2.at<float>(0) = x2;
-    p2.at<float>(1) = y2;
-    p2.at<float>(2) = 1;
-    p2_t = H.inv() * p2;
-    x1m = p2_t.at<float>(0) / p2_t.at<float>(2);
-    y1m = p2_t.at<float>(1) / p2_t.at<float>(2);
-
-    //s = h31*x1 + h32*y1 + h33;
-    //x2m = (h11*x1 + h12*y1 + h13) / s;
-    //y2m = (h21*x1 + h22*y1 + h23) / s;
-    dist = sqrt( pow(x2m-x2,2) + pow(y2m-y2,2)) + sqrt( pow(x1m - x1, 2) + pow(y1m - y1, 2) );
-
-    if (dist <= h_max_error) {
-      inliers.push_back(matches[i]);
-      inliers.push_back(matches[i+1]);
     }
+    closedir (dir);
   }
-}
-
-
-/* ************************************************************************* */
-void draw_inliers(const cv::Mat& img1, const cv::Mat& imgN, cv::Mat& img_com,
-                  const std::vector<cv::Point2f>& ptpairs) {
-
-  int x1 = 0, y1 = 0, xN = 0, yN = 0;
-  float rows1 = 0.0, cols1 = 0.0;
-  float rowsN = 0.0, colsN = 0.0;
-  float ufactor = 0.0, vfactor = 0.0;
-
-  rows1 = img1.rows;
-  cols1 = img1.cols;
-  rowsN = imgN.rows;
-  colsN = imgN.cols;
-  ufactor = (float)(cols1)/(float)(colsN);
-  vfactor = (float)(rows1)/(float)(rowsN);
-
-  // This is in case the input images don't have the same resolution
-  cv::Mat img_aux = cv::Mat(cv::Size(img1.cols, img1.rows), CV_8UC3);
-  cv::resize(imgN, img_aux, cv::Size(img1.cols, img1.rows), 0, 0, cv::INTER_LINEAR);
-
-  for (int i = 0; i < img_com.rows; i++) {
-    for (int j = 0; j < img_com.cols; j++) {
-      if (j < img1.cols) {
-        *(img_com.ptr<unsigned char>(i)+3*j) = *(img1.ptr<unsigned char>(i)+3*j);
-        *(img_com.ptr<unsigned char>(i)+3*j+1) = *(img1.ptr<unsigned char>(i)+3*j+1);
-        *(img_com.ptr<unsigned char>(i)+3*j+2) = *(img1.ptr<unsigned char>(i)+3*j+2);
-      }
-      else {
-        *(img_com.ptr<unsigned char>(i)+3*j) = *(imgN.ptr<unsigned char>(i)+3*(j-img_aux.cols));
-        *(img_com.ptr<unsigned char>(i)+3*j+1) = *(imgN.ptr<unsigned char>(i)+3*(j-img_aux.cols)+1);
-        *(img_com.ptr<unsigned char>(i)+3*j+2) = *(imgN.ptr<unsigned char>(i)+3*(j-img_aux.cols)+2);
-      }
+  float smoothed[1024];
+  int cnt=0;
+  float im[32*32];
+  char s[35];
+  char fname[35];
+  cnt=0;
+  /* loop through all images and read them */
+  for (int i = 0; i < numImgs; i++) {
+    int N = 32;
+    sprintf(s, "%spatches%04d.pgm",path ,i);
+    cv::Mat largeImg = cv::imread(s, 0);
+    for (int r = 0; r < largeImg.rows; r += N)
+      for (int c = 0; c < largeImg.cols; c += N)
+    {
+      cv::Mat tile = largeImg(cv::Range(r, cv::min(r + N, largeImg.rows)),
+                  cv::Range(c, cv::min(c + N, largeImg.cols)));
+      A->patchesCV.push_back(tile);
     }
   }
 
-  for (size_t i = 0; i < ptpairs.size(); i+= 2) {
-    x1 = (int)(ptpairs[i].x+.5);
-    y1 = (int)(ptpairs[i].y+.5);
-    xN = (int)(ptpairs[i+1].x*ufactor+img1.cols+.5);
-    yN = (int)(ptpairs[i+1].y*vfactor+.5);
-    cv::line(img_com, cv::Point(x1,y1), cv::Point(xN,yN), cv::Scalar(255,0,0), 2);
+  char gt_fname[55];
+  sprintf(gt_fname, "%sm50_500000_500000_0.txt",path);
+
+  /* read the gt file */
+  FILE *in_file;
+  in_file = fopen(gt_fname, "rb");
+  /* init the gt */
+  A->gt =(int**) malloc(GT_SIZE * sizeof(int *));
+  for (int i = 0; i < GT_SIZE; i++){
+    A->gt[i] = (int*)malloc(7 * sizeof(int));
   }
+
+  /* read the gt */
+  for (int i = 0; i < GT_SIZE; i++) {
+    for (int j = 0; j < 7 ; ++j){
+      int fscan_res;
+      fscan_res = fscanf(in_file, "%d", &A->gt[i][j]);
+      if (!fscan_res)
+    {
+      printf("Something went wrong. \n");
+    }
+    }
+  }
+  fclose(in_file);
 }

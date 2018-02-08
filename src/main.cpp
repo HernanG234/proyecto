@@ -20,6 +20,7 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <vector>
+#include <assert.h>
 
 
 #include "ldb.h"
@@ -27,7 +28,14 @@
 
 #define VC_EXTRALEAN
 #define WIN32_LEAN_AND_MEAN
+
 #include "baft.h"
+
+#include "utils.h"
+#include "bold.h"
+#include "helper.h"
+
+#include <locky.h>
 
 using namespace std;
 using namespace cv;
@@ -88,6 +96,9 @@ int main(int argc, char** argv)
 	constexpr bool multithread = true;
 	double t1,t2,tdet,tdesc=0,tmatch=0;
 	Mat src_1,src_2, descriptors_1, descriptors_2;
+	Helper ImageHelper;
+	Mat masks_1, masks_2;
+	vector<Mat> patches_1, patches_2;
 
 	vector<KeyPoint> keypoints_1, keypoints_2;
 	int kpts;
@@ -185,12 +196,35 @@ int main(int argc, char** argv)
 		calc_detection(detector, src_2, keypoints_2, false);
 	}
 
+	else if (!strcmp("LOCKYS", argv[1] )) {
+		cv::Ptr<locky::LOCKYFeatureDetector> detector = locky::LOCKYFeatureDetector::create(100000,7,3,20,true);
+		detector->detect(src_1, keypoints_1);
+		t1 = cv::getTickCount();
+		detector->detect(src_1, keypoints_1);
+		t2 = cv::getTickCount();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		detector->detect(src_2, keypoints_2);
+		cout <<"Cantidad de Keypoints: "<< keypoints_1.size() << endl;
+		cout << "Tiempo deteccion: " << tdet << " ms" << endl;
+	}
+
+	else if (!strcmp("LOCKY", argv[1] )) {
+		cv::Ptr<locky::LOCKYFeatureDetector> detector = locky::LOCKYFeatureDetector::create(100000,8,2,20,false);
+		detector->detect(src_1, keypoints_1);
+		t1 = cv::getTickCount();
+		detector->detect(src_1, keypoints_1);
+		t2 = cv::getTickCount();
+		tdet = 1000.0*(t2-t1) / cv::getTickFrequency();
+		detector->detect(src_2, keypoints_2);
+		cout <<"Cantidad de Keypoints: "<< keypoints_1.size() << endl;
+		cout << "Tiempo deteccion: " << tdet << " ms" << endl;
+	}
+
 	else{
 		cout<<argv[1]<<" no es un nombre de detector valido"<<endl;
 		cout<<"Detectores: FAST,ORB,GFTT,BAFT"<<endl;
 		return 0;
 	}
-	kpts=keypoints_1.size();
 
 	kpts=keypoints_1.size();
 
@@ -299,7 +333,7 @@ int main(int argc, char** argv)
 		}
 		tdesc/=30;
 		cout <<"Cantidad de Keypoints: "<< keypoints_1.size() << endl;
-		cout << "Tiempo descripcion: " << tdet << " ms" << endl;
+		cout << "Tiempo descripcion: " << tdesc << " ms" << endl;
 		featureExtractor.compute(src_2, keypoints_2, descriptors_2, 0);
 		cout<<"Descriptor size: "<<descriptors_1.size()<<endl;
 		//calc_description(&featureExtractor, src_1, keypoints_1, descriptors_1, true);
@@ -311,6 +345,17 @@ int main(int argc, char** argv)
 		Ptr<Feature2D> featureExtractor = BAFT::create(500,64);
 		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
+	}
+
+	//si el descriptor es BOLD
+	else if( !strcmp("BOLD", argv[2])) {
+	//-- Get patches of compared images
+	ImageHelper.computePatches(keypoints_1, src_1, patches_1);
+	ImageHelper.computePatches(keypoints_2, src_2, patches_2);
+
+	//-- Describe keypoints
+	ImageHelper.computeBinaryDescriptors(patches_1, descriptors_1, masks_1);
+	ImageHelper.computeBinaryDescriptors(patches_2, descriptors_2, masks_2);
 	}
 
 	else{
