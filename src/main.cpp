@@ -139,7 +139,7 @@ int main(int argc, char** argv)
 
 		Ptr<FeatureDetector> detector = ORB::create(1000);
 		detector->detect(src_1, keypoints_1);
-		calc_detection(detector, src_1, keypoints_1, true);
+		tdet=calc_detection(detector, src_1, keypoints_1, true);
 		calc_detection(detector, src_2, keypoints_2, false);
 	}
 
@@ -209,7 +209,7 @@ int main(int argc, char** argv)
 	}
 
 	else if (!strcmp("LOCKY", argv[1] )) {
-		cv::Ptr<locky::LOCKYFeatureDetector> detector = locky::LOCKYFeatureDetector::create(100000,8,2,20,false);
+		cv::Ptr<locky::LOCKYFeatureDetector> detector = locky::LOCKYFeatureDetector::create(100000,7,3,20,false);
 		detector->detect(src_1, keypoints_1);
 		t1 = cv::getTickCount();
 		detector->detect(src_1, keypoints_1);
@@ -282,10 +282,8 @@ int main(int argc, char** argv)
 		 */
 		Ptr<Feature2D> featureExtractor = LATCH::create(64);
 
-		calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
+		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
-		cout << "Descriptor OpenCV LATCH size: " << descriptors_1.size() << endl;
-		cout << descriptors_2.row(0) << endl;
 	}
 
 	// ------------- LATCHK ------------
@@ -301,8 +299,8 @@ int main(int argc, char** argv)
 			desc_1[i] =  __builtin_bswap64 (desc_1[i]);
 		descriptors_1 = Mat(keypoints_1.size(), 64, CV_8U, desc_1, 64);
 		t2 = cv::getTickCount();
-		tdet = 1000.0*(t2-t1) / cv::getTickFrequency() / 30;
-		cout<<"Tiempo de descripcion: "<<tdet<<" ms"<<endl;
+		tdesc = 1000.0*(t2-t1) / cv::getTickFrequency() / 30;
+		cout<<"Tiempo de descripcion: "<<tdesc<<" ms"<<endl;
 		// --------------------------------
 
 		// ------------- LATCHK ------------
@@ -323,15 +321,12 @@ int main(int argc, char** argv)
 		//Feature2D featureExtractor = LdbDescriptorExtractor::create();
 
 		LDB featureExtractor(32);
-		t1 = cv::getTickCount();
 		featureExtractor.compute(src_1, keypoints_1, descriptors_1, 0);
-		for(int i=0;i<30;i++){
-			t1 = cv::getTickCount();
+		t1 = cv::getTickCount();
+		for(int i=0;i<30;i++)
 			featureExtractor.compute(src_1, keypoints_1, descriptors_1, 0);
-			t2 = cv::getTickCount();
-			tdesc += 1000.0*(t2-t1) / cv::getTickFrequency();
-		}
-		tdesc/=30;
+		t2 = cv::getTickCount();
+		tdesc = 1000.0*(t2-t1) / cv::getTickFrequency() / 30;
 		cout <<"Cantidad de Keypoints: "<< keypoints_1.size() << endl;
 		cout << "Tiempo descripcion: " << tdesc << " ms" << endl;
 		featureExtractor.compute(src_2, keypoints_2, descriptors_2, 0);
@@ -349,13 +344,16 @@ int main(int argc, char** argv)
 
 	//si el descriptor es BOLD
 	else if( !strcmp("BOLD", argv[2])) {
-	//-- Get patches of compared images
-	ImageHelper.computePatches(keypoints_1, src_1, patches_1);
-	ImageHelper.computePatches(keypoints_2, src_2, patches_2);
+		t1 = cv::getTickCount();
+		for(int i=0;i<30;i++) {
+			ImageHelper.computePatches(keypoints_1, src_1, patches_1);
+			ImageHelper.computeBinaryDescriptors(patches_1, descriptors_1, masks_1);
+		}
+		t2 = cv::getTickCount();
+		tdesc = 1000.0*(t2-t1) / cv::getTickFrequency() / 30;
 
-	//-- Describe keypoints
-	ImageHelper.computeBinaryDescriptors(patches_1, descriptors_1, masks_1);
-	ImageHelper.computeBinaryDescriptors(patches_2, descriptors_2, masks_2);
+		ImageHelper.computePatches(keypoints_2, src_2, patches_2);
+		ImageHelper.computeBinaryDescriptors(patches_2, descriptors_2, masks_2);
 	}
 
 	else{
