@@ -110,7 +110,7 @@ int main(int argc, char** argv)
 	//src_2 = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
 
 	//Ayuda
-	if(argc!=3){
+	if(argc < 3 || argc > 4){
 		cout<<"Modo de uso: ./ejecutable <detector> <descriptor>"<<endl;
 		cout<<"Detector: FAST, ORB o GFTT"<<endl;
 		cout<<"Descriptor: BRIEF, BRISK, FREAK ,(los que probemos)"<<endl;
@@ -364,12 +364,13 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	//Dibujar kpts en las dos imagenes
-	drawKeypoints(src_1, keypoints_1, src_1);
-	drawKeypoints(src_2, keypoints_2, src_2);
-	imshow("keypoints",src_1);
-	imshow("keypoints_2",src_2);
-
+	if (argc == 4 && !strcmp (argv[3], "show")){
+		//Dibujar kpts en las dos imagenes
+		drawKeypoints(src_1, keypoints_1, src_1);
+		drawKeypoints(src_2, keypoints_2, src_2);
+		imshow("keypoints",src_1);
+		imshow("keypoints_2",src_2);
+	}
 	//Matching
 	BFMatcher matcher(NORM_HAMMING);
 	vector<vector<DMatch> > matches,matches_1;
@@ -418,13 +419,15 @@ int main(int argc, char** argv)
 
 	cout<<"Matches correctos (inliers): "<<	homography_matches.size() <<
 		" ("<<100.f * (float) homography_matches.size() / (float) good_matches.size()<<"%)"<<endl;
-	// Draw matches
-	Mat img_matches;
-	drawMatches( src_1, keypoints_1, src_2, keypoints_2, good_matches, img_matches);
-	imshow("matches",img_matches);
-	// Save Image
-	imwrite("matches.png", img_matches);
 
+	if (argc == 4 && !strcmp (argv[3], "show")){
+		// Draw matches
+		Mat img_matches;
+		drawMatches( src_1, keypoints_1, src_2, keypoints_2, good_matches, img_matches);
+		imshow("matches",img_matches);
+		// Save Image
+		imwrite("matches.png", img_matches);
+	}
 	//Archivo para guardar resultados
 	ofstream file("Resultados.txt", ios_base::app);
 	//file.open()
