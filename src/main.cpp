@@ -137,7 +137,7 @@ int main(int argc, char** argv)
 		int nlevels=8, int edgeThreshold=31, int firstLevel=0,
 		int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31)*/
 
-		Ptr<FeatureDetector> detector = ORB::create(1000);
+		Ptr<FeatureDetector> detector = ORB::create(500);
 		detector->detect(src_1, keypoints_1);
 		tdet=calc_detection(detector, src_1, keypoints_1, true);
 		calc_detection(detector, src_2, keypoints_2, false);
@@ -197,7 +197,7 @@ int main(int argc, char** argv)
 	}
 
 	else if (!strcmp("LOCKYS", argv[1] )) {
-		cv::Ptr<locky::LOCKYFeatureDetector> detector = locky::LOCKYFeatureDetector::create(100000,7,3,20,true);
+		cv::Ptr<locky::LOCKYFeatureDetector> detector = locky::LOCKYFeatureDetector::create(10000,7,3,20,true);
 		detector->detect(src_1, keypoints_1);
 		t1 = cv::getTickCount();
 		detector->detect(src_1, keypoints_1);
@@ -209,7 +209,7 @@ int main(int argc, char** argv)
 	}
 
 	else if (!strcmp("LOCKY", argv[1] )) {
-		cv::Ptr<locky::LOCKYFeatureDetector> detector = locky::LOCKYFeatureDetector::create(100000,7,3,20,false);
+		cv::Ptr<locky::LOCKYFeatureDetector> detector = locky::LOCKYFeatureDetector::create(100000,7,3,30,false);
 		detector->detect(src_1, keypoints_1);
 		t1 = cv::getTickCount();
 		detector->detect(src_1, keypoints_1);
@@ -345,12 +345,10 @@ int main(int argc, char** argv)
 	//si el descriptor es BOLD
 	else if( !strcmp("BOLD", argv[2])) {
 		t1 = cv::getTickCount();
-		for(int i=0;i<30;i++) {
-			ImageHelper.computePatches(keypoints_1, src_1, patches_1);
-			ImageHelper.computeBinaryDescriptors(patches_1, descriptors_1, masks_1);
-		}
+		ImageHelper.computePatches(keypoints_1, src_1, patches_1);
+		ImageHelper.computeBinaryDescriptors(patches_1, descriptors_1, masks_1);
 		t2 = cv::getTickCount();
-		tdesc = 1000.0*(t2-t1) / cv::getTickFrequency() / 30;
+		tdesc = 1000.0*(t2-t1) / cv::getTickFrequency();
 
 		ImageHelper.computePatches(keypoints_2, src_2, patches_2);
 		ImageHelper.computeBinaryDescriptors(patches_2, descriptors_2, masks_2);
