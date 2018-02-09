@@ -35,7 +35,9 @@
 #include "bold.h"
 #include "helper.h"
 
-#include <locky.h>
+#include "locky.h"
+
+#include "gms_matcher.h"
 
 using namespace std;
 using namespace cv;
@@ -197,7 +199,7 @@ int main(int argc, char** argv)
 	}
 
 	else if (!strcmp("LOCKYS", argv[1] )) {
-		cv::Ptr<locky::LOCKYFeatureDetector> detector = locky::LOCKYFeatureDetector::create(10000,7,3,20,true);
+		cv::Ptr<locky::LOCKYFeatureDetector> detector = locky::LOCKYFeatureDetector::create(100000,7,3,20,true);
 		detector->detect(src_1, keypoints_1);
 		t1 = cv::getTickCount();
 		detector->detect(src_1, keypoints_1);
@@ -369,57 +371,39 @@ int main(int argc, char** argv)
 	}
 	//Matching
 	BFMatcher matcher(NORM_HAMMING);
-	vector<vector<DMatch> > matches,matches_1;
-	for(int i=0;i<50;i++){
-		t1 = cv::getTickCount();
-		matcher.knnMatch(descriptors_1, descriptors_2, matches_1, 2);
-		t2 = cv::getTickCount();
-		tmatch += 1000.0*(t2-t1) / cv::getTickFrequency();
+	vector<DMatch> matches,matches_1, gms_matches;
+
+
+	t1 = cv::getTickCount();
+	matcher.match(descriptors_1, descriptors_2, matches);
+
+	//GMS filter
+	int num_inliers = 0;
+	std::vector<bool> vbInliers;
+	gms_matcher gms(keypoints_1,src_1.size(), keypoints_2,src_2.size(), matches);
+	num_inliers = gms.GetInlierMask(vbInliers, false, false);
+
+	cout << "Get total " << num_inliers << " matches." << endl;
+
+	// draw matches
+	for (size_t i = 0; i < vbInliers.size(); ++i)
+	{
+		if (vbInliers[i] == true)
+		{
+			gms_matches.push_back(matches[i]);
+		}
 	}
-	tmatch/= 50;
+	t2 = cv::getTickCount();
+	tmatch = 1000.0*(t2-t1) / cv::getTickFrequency();
+
 	cout<<"Matching: "<< descriptors_1.rows<<" descriptores (imagen 1), contra "<< descriptors_2.rows<<" descriptores (imagen 2)"<<endl;
-	cout << "Tiempo de matching: " << tmatch << " ms" << endl;
-	matcher.knnMatch(descriptors_1, descriptors_2, matches, 2);
-	//cout << "Matches: " << matches.size()<<endl;
-	vector<DMatch> good_matches;
-	for(unsigned int i = 0; i < matches.size(); i++ )
-		if (matches[i][0].distance<nn_ratio_threshold *matches[i][1].distance)
-			good_matches.push_back(matches[i][0]);
-
-	cout<<"Good matches: "<<good_matches.size()<<endl;
-
-	vector<Point2f> match_left, match_right;
-	vector<float> distances;
-
-	for(unsigned int i = 0; i < good_matches.size(); i++ )
-	{
-		match_left.push_back( keypoints_1[ good_matches[i].queryIdx ].pt );
-		match_right.push_back( keypoints_2[ good_matches[i].trainIdx ].pt );
-		distances.push_back(good_matches[i].distance);
-	}
-
-	Mat correctMatches;
-	Mat H = findHomography( match_left, match_right, CV_RANSAC, 3, correctMatches );
-
-	// check if the homography matrix is good enough
-	float detMin = 1e-3f;
-	if (abs(determinant(H)) < detMin)
-		cout<<"Mala Homografia (|det(H)| < "<<detMin<<endl;
-
-	vector<DMatch> homography_matches;
-	for (unsigned int i=0; i < good_matches.size(); ++i)
-	{
-		if (*correctMatches.ptr<uchar>(i))
-			homography_matches.push_back(good_matches[i]);
-	}
-
-	cout<<"Matches correctos (inliers): "<<	homography_matches.size() <<
-		" ("<<100.f * (float) homography_matches.size() / (float) good_matches.size()<<"%)"<<endl;
+	cout<<"Tiempo de matching: " << tmatch << " ms" << endl;
+	cout<<"Good matches: "<<gms_matches.size()<<endl;
 
 	if (argc == 4 && !strcmp (argv[3], "show")){
 		// Draw matches
 		Mat img_matches;
-		drawMatches( src_1, keypoints_1, src_2, keypoints_2, good_matches, img_matches);
+		drawMatches( src_1, keypoints_1, src_2, keypoints_2, gms_matches, img_matches);
 		imshow("matches",img_matches);
 		// Save Image
 		imwrite("matches.png", img_matches);
@@ -436,7 +420,7 @@ int main(int argc, char** argv)
 	file<<"Tiempo descripcion por keypoint: "<<tdesc*1000/descriptors_1.rows<<" us "<<endl;
 	file<<"Tiempo Match: "<<tmatch<<" ms "<<endl;
 	file<<"Tiempo total: "<<tdet+tdesc+tmatch<<" ms "<<endl;
-	file<<"Good matches: "<<good_matches.size()<<endl<<endl;
+	file<<"Good matches: "<<gms_matches.size()<<endl<<endl;
 	//file<<"Matches correctos (inliers): "<<	homography_matches.size() <<
 		//" ("<<100.f * (float) homography_matches.size() / (float) good_matches.size()<<"%)"<<endl<<endl;
 	waitKey(0);
