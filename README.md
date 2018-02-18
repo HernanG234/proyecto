@@ -6,7 +6,7 @@ Compilation:
 `make`
 
 Run:
-`./test DetectorName DescriptorName`
+`./test DetectorName DescriptorName MatcherName [show]`
 
 ### Available Detectors: ###
 - FAST
@@ -23,10 +23,24 @@ Run:
 - FREAK
 - ORB
 - LATCH
-- LATCHK
+- LATCHK\*
 - LDB
 - BAFT
 - BOLD
+
+### Available Matchers: ###
+- BFM
+- FLANN
+- GMS
+
+### Observations: ###
+
+**LATCHK** requires **-mavx2** and **-mfma** flags to work, they're currently disabled and
+LATCHK's code commented as one of our laptops didn't support **avx2** nor **fma**. If
+your hardware supports them, you can add the flags to the Makefile an uncomment
+that part of the code. (**BAFT** and **LOCKY** also compiled with these optimizations
+and didn't work properly, code is not commented though as they work just fine
+without this. Again, if **avx2** and **fma** *are* supported, add them to the Makefile).
 
 ### TODO: ###
 - [x] Add Makefile

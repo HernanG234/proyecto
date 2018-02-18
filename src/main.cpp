@@ -21,10 +21,10 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <assert.h>
-
+#include <opencv2/flann/flann.hpp>
 
 #include "ldb.h"
-#include "LATCHK.h"
+//#include "LATCHK.h"
 
 #define VC_EXTRALEAN
 #define WIN32_LEAN_AND_MEAN
@@ -112,10 +112,12 @@ int main(int argc, char** argv)
 	//src_2 = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
 
 	//Ayuda
-	if(argc < 3 || argc > 4){
-		cout<<"Modo de uso: ./ejecutable <detector> <descriptor>"<<endl;
-		cout<<"Detector: FAST, ORB o GFTT"<<endl;
-		cout<<"Descriptor: BRIEF, BRISK, FREAK ,(los que probemos)"<<endl;
+	if(argc < 4 || argc > 5){
+		cout<<"Modo de uso: ./test <detector> <descriptor> <matcher> show (show es opcional)"<<endl;
+		cout<<"Detector: FAST, ORB, GFTT, AGAST, BRISK, BAFT, LOCKY, LOCKYS"<<endl;
+		cout<<"Descriptor: BRIEF, BRISK, FREAK, ORB, LDB, LATCH, LATCHK, BAFT, BOLD ,(los que probemos)"<<endl;
+		cout<<"Matcher: BFM, GMS, FLANN"<<endl;
+
 		return 0;
 	}
 
@@ -224,7 +226,7 @@ int main(int argc, char** argv)
 
 	else{
 		cout<<argv[1]<<" no es un nombre de detector valido"<<endl;
-		cout<<"Detectores: FAST,ORB,GFTT,BAFT"<<endl;
+		cout<<"Detectores: FAST, ORB, GFTT, AGAST, BRISK, BAFT, LOCKY, LOCKYS"<<endl;
 		return 0;
 	}
 
@@ -287,7 +289,7 @@ int main(int argc, char** argv)
 		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
 	}
-
+/*
 	// ------------- LATCHK ------------
 	else if( !strcmp("LATCHK", argv[2] )){
 		uint64_t* desc_1 = new uint64_t[8 * keypoints_1.size()];
@@ -316,7 +318,7 @@ int main(int argc, char** argv)
 		descriptors_2 = Mat(keypoints_2.size(), 64, CV_8U, desc_2, 64);
 		// -------------------------------- 
 	}
-
+*/
 	//Si el descriptor es LDB
 	else if( !strcmp("LDB", argv[2] )){
 		//LDB(int _bytes = 32, int _nlevels = 3, int _patchSize = 60);
@@ -358,56 +360,242 @@ int main(int argc, char** argv)
 
 	else{
 		cout<<argv[2]<<" no es un nombre de descriptor valido"<<endl;
-		cout<<"Descriptores: BRIEF,BRISK,FREAK,LATCH,LDB,BAFT,(...)"<<endl;
+		cout<<"Descriptores: BRIEF,BRISK,FREAK,LDB,LATCH,LATCHK,BAFT,BOLD,(...)"<<endl;
 		return 0;
 	}
 
-	if (argc == 4 && !strcmp (argv[3], "show")){
+	if (argc == 5 && !strcmp (argv[4], "show")){
 		//Dibujar kpts en las dos imagenes
 		drawKeypoints(src_1, keypoints_1, src_1);
 		drawKeypoints(src_2, keypoints_2, src_2);
 		imshow("keypoints",src_1);
 		imshow("keypoints_2",src_2);
 	}
+
 	//Matching
+
+	cout<<"Matching: "<< descriptors_1.rows<<" descriptores (imagen 1), contra "<< descriptors_2.rows<<
+		" descriptores (imagen 2)"<<endl;
+
+	//BFMatcher es comun a BFM y a GMS. En BFM tambien se hace RANSAC. En GMS se aplica un filtro
 	BFMatcher matcher(NORM_HAMMING);
-	vector<DMatch> matches,matches_1, gms_matches;
+	vector<DMatch> matches,good_matches, gms_matches, homography_matches;
+	///////////////////////////////
+
+	//Si el matcher es Brute Force Matcher
+
+	if (!strcmp (argv[3], "BFM")){
+
+		vector<vector<DMatch> > matches;     // No es como el matches declarado mas arriba. vector<vector<DMatch> >
+		t1 = cv::getTickCount();
+		matcher.knnMatch(descriptors_1, descriptors_2, matches, 2);
+		t2 = cv::getTickCount();
+		tmatch = 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout << "Tiempo de BFMatcher: " << tmatch << " ms" << endl;
 
 
-	t1 = cv::getTickCount();
-	matcher.match(descriptors_1, descriptors_2, matches);
+	//Good Matches + RANSAC
+		vector<float> distances;
+
+		t1 = cv::getTickCount();
+		for(unsigned int i = 0; i < matches.size(); i++ ){
+			if (matches[i][0].distance<nn_ratio_threshold *matches[i][1].distance){
+				good_matches.push_back(matches[i][0]);
+			//cout<< matches[i][0].distance <<" < "<<nn_ratio_threshold *matches[i][1].distance<<endl;
+			}
+		}
+		cout<<"Good matches: "<<good_matches.size()<<endl;
+
+		vector<Point2f> match_left, match_right;
+
+		for(unsigned int i = 0; i < good_matches.size(); i++ )
+		{
+			match_left.push_back( keypoints_1[ good_matches[i].queryIdx ].pt );
+			match_right.push_back( keypoints_2[ good_matches[i].trainIdx ].pt );
+			distances.push_back(good_matches[i].distance);
+		}
+
+		Mat correctMatches;
+		Mat H = findHomography( match_left, match_right, CV_RANSAC, 3, correctMatches );
+
+	// check if the homography matrix is good enough
+		float detMin = 1e-3f;
+		if (abs(determinant(H)) < detMin)
+			cout<<"Mala Homografia (|det(H)| < "<<detMin<<endl;
+
+
+		for (unsigned int i=0; i < good_matches.size(); ++i)
+		{
+			if (*correctMatches.ptr<uchar>(i))
+				homography_matches.push_back(good_matches[i]);
+		}
+
+		cout<<"Matches correctos (inliers): "<<	homography_matches.size() <<
+			" ("<<100.f * (float) homography_matches.size() / (float) good_matches.size()<<"%)"<<endl;
+
+		t2 = cv::getTickCount();
+		tmatch += 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Tiempo BFM + RANSAC: "<< tmatch <<" ms" <<endl;
+
+	}
+
+	//Si el matcher es GMS
+
+	else if (!strcmp (argv[3], "GMS")){
+		t1 = cv::getTickCount();
+		matcher.match(descriptors_1, descriptors_2, matches);
+		t2 = cv::getTickCount();
+		tmatch = 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<< "Tiempo de BFMatcher: "<< tmatch <<" ms"<<endl;
 
 	//GMS filter
-	int num_inliers = 0;
-	std::vector<bool> vbInliers;
-	gms_matcher gms(keypoints_1,src_1.size(), keypoints_2,src_2.size(), matches);
-	num_inliers = gms.GetInlierMask(vbInliers, false, false);
+		t1 = cv::getTickCount();
+		int num_inliers = 0;
+		std::vector<bool> vbInliers;
+		gms_matcher gms(keypoints_1,src_1.size(), keypoints_2,src_2.size(), matches);
+		num_inliers = gms.GetInlierMask(vbInliers, false, false);
 
-	cout << "Get total " << num_inliers << " matches." << endl;
+		cout << "Get total " << num_inliers << " matches." << endl;
 
-	// draw matches
-	for (size_t i = 0; i < vbInliers.size(); ++i)
-	{
-		if (vbInliers[i] == true)
+	//Draw matches
+		for (size_t i = 0; i < vbInliers.size(); ++i)
 		{
-			gms_matches.push_back(matches[i]);
+			if (vbInliers[i] == true)
+			{
+				gms_matches.push_back(matches[i]);
+			}
 		}
+
+		t2 = cv::getTickCount();
+		tmatch += 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Tiempo de BFmatcher + filtro GMS: " << tmatch << " ms" << endl;
+		cout<<"Good matches: "<<gms_matches.size()<<endl;
 	}
-	t2 = cv::getTickCount();
-	tmatch = 1000.0*(t2-t1) / cv::getTickFrequency();
 
-	cout<<"Matching: "<< descriptors_1.rows<<" descriptores (imagen 1), contra "<< descriptors_2.rows<<" descriptores (imagen 2)"<<endl;
-	cout<<"Tiempo de matching: " << tmatch << " ms" << endl;
-	cout<<"Good matches: "<<gms_matches.size()<<endl;
+	//Si el matcher es FLANN
+	else if (!strcmp (argv[3], "FLANN")){
+		vector<vector<DMatch> > matches;
+		//FlannBasedMatcher matcher_flann;
 
-	if (argc == 4 && !strcmp (argv[3], "show")){
+		FlannBasedMatcher matcher_flann(new flann::LshIndexParams(20, 10, 2));
+		matcher_flann.knnMatch( descriptors_1, descriptors_2, matches,2 );
+		t1 = cv::getTickCount();
+		matcher_flann.knnMatch( descriptors_1, descriptors_2, matches,2 );
+		//matcher_flann.match( descriptors_1, descriptors_2, matches );
+		t2 = cv::getTickCount();
+		tmatch = 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<< "Tiempo de FLANN matcher: "<< tmatch <<" ms"<<endl;
+
+	////////////////////////////////////////////////////////////
+	//Calcular good matches: forma 1: como se hizo para BFM   //
+	////////////////////////////////////////////////////////////
+
+	//Se deja esta forma de calcular good matches a fines de comparacion con BFM
+
+		for(unsigned int i = 0; i < matches.size(); i++ ){
+			if (matches[i][0].distance<nn_ratio_threshold *matches[i][1].distance){
+				good_matches.push_back(matches[i][0]);
+			}
+		}
+		cout<<"Good matches: "<<good_matches.size()<<endl;
+
+	////////////////////////////////////////////////////////////
+	//Calcular good matches: forma 2: como venia en el ejemplo//
+	////////////////////////////////////////////////////////////
+
+
+	//-- Quick calculation of max and min distances between keypoints
+	/*	t1 = cv::getTickCount();
+		double max_dist = 0; double min_dist = 100;
+		for( int i = 0; i < descriptors_1.rows; i++ ){
+			double dist = matches[i].distance;
+			if( dist < min_dist ) min_dist = dist;
+				if( dist > max_dist ) max_dist = dist;
+  		}
+		printf("-- Max dist : %f \n", max_dist );
+		printf("-- Min dist : %f \n", min_dist );
+
+	//-- Draw only "good" matches (i.e. whose distance is less than 2*min_dist,
+	//-- or a small arbitary value ( 0.02 ) in the event that min_dist is very
+	//-- small)
+	//-- PS.- radiusMatch can also be used here.
+
+		for( int i = 0; i < descriptors_1.rows; i++ ){
+			if( matches[i].distance <= max(2*min_dist, 0.02) ){    //Variando 2*min_dist se encuentran mas o menos matches
+				good_matches.push_back( matches[i]); 
+				//cout << matches[i].distance << " < " << max(10*min_dist, 0.02) << endl;
+			}
+		}
+
+		t2 = cv::getTickCount();
+		tmatch += 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<< "Tiempo de FLANN matcher + Good Matches : "<< tmatch <<" ms"<<endl;
+
+*/
+
+
+		//RANSAC
+		t1 = cv::getTickCount();
+		vector<float> distances;
+		vector<Point2f> match_left, match_right;
+
+		for(unsigned int i = 0; i < good_matches.size(); i++ )
+		{
+			match_left.push_back( keypoints_1[ good_matches[i].queryIdx ].pt );
+			match_right.push_back( keypoints_2[ good_matches[i].trainIdx ].pt );
+			distances.push_back(good_matches[i].distance);
+		}
+
+		Mat correctMatches;
+		Mat H = findHomography( match_left, match_right, CV_RANSAC, 3, correctMatches );
+
+	// check if the homography matrix is good enough
+		float detMin = 1e-3f;
+		if (abs(determinant(H)) < detMin)
+			cout<<"Mala Homografia (|det(H)| < "<<detMin<<endl;
+
+		for (unsigned int i=0; i < good_matches.size(); ++i)
+		{
+			if (*correctMatches.ptr<uchar>(i))
+				homography_matches.push_back(good_matches[i]);
+		}
+
+		cout<<"Matches correctos (inliers): "<<	homography_matches.size() <<
+			" ("<<100.f * (float) homography_matches.size() / (float) good_matches.size()<<"%)"<<endl;
+
+		t2 = cv::getTickCount();
+		tmatch += 1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Tiempo FLANN + RANSAC: "<< tmatch <<" ms" <<endl;
+
+		/*for( int i = 0; i < (int)good_matches.size(); i++ )
+		printf( "-- Good Match [%d] Keypoint 1: %d  -- Keypoint 2: %d \n", i, good_matches[i].queryIdx,good_matches[i].trainIdx); 
+		*/
+	}
+
+	else{
+		cout<<argv[3]<<" no es un nombre de matcher valido"<<endl;
+		cout<<"Matchers: BFM, GMS, FLANN"<<endl;
+		return 0;
+	}
+
+	//Mostrar matches
+
+	if (argc == 5 && !strcmp (argv[4], "show")){
 		// Draw matches
 		Mat img_matches;
-		drawMatches( src_1, keypoints_1, src_2, keypoints_2, gms_matches, img_matches);
+		if(!strcmp (argv[3], "GMS"))
+			drawMatches( src_1, keypoints_1, src_2, keypoints_2, gms_matches, img_matches);
+		if(!strcmp (argv[3], "BFM" ) || !strcmp (argv[3], "FLANN" ))
+			drawMatches( src_1, keypoints_1, src_2, keypoints_2, homography_matches, img_matches); //Podrian ponerse los good_matches
+		/*if(!strcmp (argv[3], "FLANN"))
+			drawMatches( src_1, keypoints_1, src_2, keypoints_2,
+				good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+				vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );*/
 		imshow("matches",img_matches);
 		// Save Image
 		imwrite("matches.png", img_matches);
 	}
+
 	//Archivo para guardar resultados
 	ofstream file("Resultados.txt", ios_base::app);
 	//file.open()
