@@ -3,10 +3,18 @@
 ### Useful commands: ###
 
 Compilation:
-`make`
+```
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make
+```
 
-Run:
-`./test DetectorName DescriptorName MatcherName [show]`
+Executable will appear in `<proyecto_path>/build/mainproject`
+
+In there run:
+
+`./Features DetectorName DescriptorName MatcherName [show]`
 
 Passing the option **show** displays the images with the matches.
 
