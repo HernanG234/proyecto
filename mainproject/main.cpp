@@ -24,7 +24,7 @@
 #include <opencv2/flann/flann.hpp>
 
 #include "ldb.h"
-#include "LATCHK.h"
+//#include "LATCHK.h"
 
 #define VC_EXTRALEAN
 #define WIN32_LEAN_AND_MEAN
@@ -289,7 +289,7 @@ int main(int argc, char** argv)
 		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
 	}
-
+/*
 	// ------------- LATCHK ------------
 	else if( !strcmp("LATCHK", argv[2] )){
 		uint64_t* desc_1 = new uint64_t[8 * keypoints_1.size()];
@@ -318,7 +318,7 @@ int main(int argc, char** argv)
 		descriptors_2 = Mat(keypoints_2.size(), 64, CV_8U, desc_2, 64);
 		// -------------------------------- 
 	}
-
+*/
 	//Si el descriptor es LDB
 	else if( !strcmp("LDB", argv[2] )){
 		//LDB(int _bytes = 32, int _nlevels = 3, int _patchSize = 60);
