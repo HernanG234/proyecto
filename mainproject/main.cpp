@@ -346,6 +346,20 @@ int main(int argc, char** argv)
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
 	}
 
+	//si el descriptor es BINBOOST
+	else if(!strcmp("BINBOOST", argv[2])){
+		Ptr<Feature2D> featureExtractor = BoostDesc::create(BoostDesc::BINBOOST_64);
+		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
+		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
+	}
+
+	//si el descriptor es VGG
+	else if(!strcmp("VGG", argv[2])){
+		Ptr<Feature2D> featureExtractor = VGG::create(VGG::VGG_120, 1.4f, true, true, 5.00f, false);
+		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
+		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
+	}
+
 	//si el descriptor es BOLD
 	else if( !strcmp("BOLD", argv[2])) {
 		t1 = cv::getTickCount();
