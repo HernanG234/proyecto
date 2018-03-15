@@ -120,9 +120,16 @@ int main(int argc, char** argv)
 
 		return 0;
 	}
+	if( !strcmp("AKAZE", argv[1] )){
+		Ptr<FeatureDetector> detector = AKAZE::create(AKAZE::DESCRIPTOR_MLDB,64,3,0.003f,1,1);
+		detector->detect(src_1,keypoints_1,Mat());
+		tdet=calc_detection(detector, src_1, keypoints_1, true);
+		//cout<< tdet<<endl;
+		calc_detection(detector, src_2, keypoints_2, false);
+	}
 
 	//Si el detector es FAST
-	if( !strcmp("FAST", argv[1] )){
+	else if( !strcmp("FAST", argv[1] )){
 		/* void FAST(InputArray image, vector<KeyPoint>& keypoints, int threshold, bool nonmaxSuppression=true )*/
 
 		Ptr<FastFeatureDetector> detector=FastFeatureDetector::create(106);
@@ -274,6 +281,17 @@ int main(int argc, char** argv)
 		  firstLevel=0, int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31, int
 		  fastThreshold=20)*/
 		Ptr<Feature2D> featureExtractor = ORB::create(500);
+
+		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
+		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
+	}
+
+	//Si el descriptor es AKAZE
+	else if( !strcmp("AKAZE", argv[2] )){
+		/*static Ptr< ORB >	create (int nfeatures=500, float scaleFactor=1.2f, int nlevels=8, int edgeThreshold=31, int
+		  firstLevel=0, int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31, int
+		  fastThreshold=20)*/
+		Ptr<Feature2D> featureExtractor = AKAZE::create(AKAZE::DESCRIPTOR_MLDB,64,3,0.003f,1,1);
 
 		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
