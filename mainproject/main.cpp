@@ -120,8 +120,11 @@ int main(int argc, char** argv)
 
 		return 0;
 	}
+
+
 	if( !strcmp("AKAZE", argv[1] )){
-		Ptr<FeatureDetector> detector = AKAZE::create(AKAZE::DESCRIPTOR_MLDB,64,3,0.003f,1,1);
+		 /*Parametros SPTAM: descriptor_type: 5 descriptor_size: 0 descriptor_channels: 1 threshold: 0.003 nOctaves: 1 			nOctaveLayers: 1 diffusivity: 1*/
+		Ptr<FeatureDetector> detector = AKAZE::create(AKAZE::DESCRIPTOR_MLDB,0,1,0.003f,1,1);
 		detector->detect(src_1,keypoints_1,Mat());
 		tdet=calc_detection(detector, src_1, keypoints_1, true);
 		//cout<< tdet<<endl;
@@ -131,8 +134,9 @@ int main(int argc, char** argv)
 	//Si el detector es FAST
 	else if( !strcmp("FAST", argv[1] )){
 		/* void FAST(InputArray image, vector<KeyPoint>& keypoints, int threshold, bool nonmaxSuppression=true )*/
+		/* Parametros SPTAM:   threshold: 60 nonmaxSuppression: true*/
 
-		Ptr<FastFeatureDetector> detector=FastFeatureDetector::create(106);
+		Ptr<FastFeatureDetector> detector=FastFeatureDetector::create(106,true);
 		//Ptr<FastFeatureDetector> detector_2=FastFeatureDetector::create(106);
 		detector->detect(src_1,keypoints_1,Mat());
 		tdet=calc_detection(detector, src_1, keypoints_1, true);
@@ -144,11 +148,10 @@ int main(int argc, char** argv)
 	//Si el detector es ORB
 	else if( !strcmp("ORB", argv[1] )){
 		/*Parametros por defecto:
-		ORB(int nfeatures=500, float scaleFactor=1.2f,
-		int nlevels=8, int edgeThreshold=31, int firstLevel=0,
+		ORB(int nfeatures=500, float scaleFactor=1.2f, int nlevels=8, int edgeThreshold=31, int firstLevel=0,
 		int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31)*/
-
-		Ptr<FeatureDetector> detector = ORB::create(500);
+		/*Parametros SPTAM:    nFeatures: 2000 scaleFactor: 1.2  nLevels: 1 edgeThreshold: 31*/
+		Ptr<FeatureDetector> detector = ORB::create(500,1.2,1,31);
 		detector->detect(src_1, keypoints_1);
 		tdet=calc_detection(detector, src_1, keypoints_1, true);
 		calc_detection(detector, src_2, keypoints_2, false);
@@ -156,11 +159,12 @@ int main(int argc, char** argv)
 
 	//Si el detector es BRISK
 	else if( !strcmp("BRISK", argv[1] )){
-		/*Parametros por defecto:
-		BUSCAR PARAMETROS POR DEFECTO BRISK
+		/*Parametros SPTAM   # orientationNormalized: 'true'# scaleNormalized: 'true'# patternScale: '22.0'# OpenCV3
+  		thresh: 80 octaves: 1 patternScale: 1.0
+
 		*/
 
-		Ptr<FeatureDetector> detector = BRISK::create(130);
+		Ptr<FeatureDetector> detector = BRISK::create(115,1,1.0);
 		detector->detect(src_1, keypoints_1);
 		tdet=calc_detection(detector, src_1, keypoints_1, true);
 		calc_detection(detector, src_2, keypoints_2, false);
@@ -169,10 +173,11 @@ int main(int argc, char** argv)
 	//Si el detector es AGAST
 	else if( !strcmp("AGAST", argv[1] )){
 		/*Parametros por defecto:
-
 		  cv::AgastFeatureDetector::create(int threshold = 10, bool nonmaxSuppression = true,
 		  int type = AgastFeatureDetector::OAST_9_16)
 		 */
+
+		/* Parametros SPTAM:  threshold: 60 nonmaxSuppression: true  */
 		Ptr<FeatureDetector> detector = AgastFeatureDetector::create(130, false);
 		detector->detect(src_1, keypoints_1);
 		tdet=calc_detection(detector, src_1, keypoints_1, true);
@@ -181,14 +186,13 @@ int main(int argc, char** argv)
 
 	//Si el detector es GFTT
 	else if( !strcmp("GFTT", argv[1] )){
-		/*Parametros por defecto:
-		  static Ptr< GFTTDetector > 	create (int maxCorners=1000,
-		  double qualityLevel=0.01,
-		  double minDistance=1, int blockSize=3,
-		  bool useHarrisDetector=false, double k=0.04)*/
+		/*Parametros por defecto: static Ptr< GFTTDetector > 	create (int maxCorners=1000, double qualityLevel=0.01,
+		  double minDistance=1, int blockSize=3, bool useHarrisDetector=false, double k=0.04)*/
+
+  		/*Parametros SPTAM : nfeatures: 1000  qualityLevel: 0.01 minDistance: 15.0   useeHarrisDetector: false*/
 
 		//tarda lo mismo en detectar 500 o 1000 puntos
-		Ptr<FeatureDetector> detector = GFTTDetector::create(500);
+		Ptr<FeatureDetector> detector = GFTTDetector::create(500,0.03,10.8,3,false,0.04);
 		detector->detect(src_1, keypoints_1);
 		tdet=calc_detection(detector, src_1, keypoints_1, true);
 		calc_detection(detector, src_2, keypoints_2, false);
@@ -197,11 +201,13 @@ int main(int argc, char** argv)
 		//Si el detector es BAFT
 	else if( !strcmp("BAFT", argv[1] )){
 		/*Parametros por defecto:
-		ORB(int nfeatures=500, float scaleFactor=1.2f,
-		int nlevels=8, int edgeThreshold=31, int firstLevel=0,
+		ORB(int nfeatures=500, float scaleFactor=1.2f, int nlevels=8, int edgeThreshold=31, int firstLevel=0,
 		int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31)*/
 
-		Ptr<Feature2D> detector = BAFT::create(500,64);
+		/* Parametros SPTAM    nfeatures: 600 size: 24 patchSize: 8 #30 gaussianBlurSize: 0 fullRotation: false
+  		scaleFactor: 1.2 nlevels: 8 #8 edgeThreshold: 45 fastThreshold: 20 #20*/
+
+		Ptr<Feature2D> detector = BAFT::create(500,24,8,0,false,1.2,8,45,20);
 		detector->detect(src_1, keypoints_1);
 		tdet=calc_detection(detector, src_1, keypoints_1, true);
 		calc_detection(detector, src_2, keypoints_2, false);
@@ -220,7 +226,7 @@ int main(int argc, char** argv)
 	}
 
 	else if (!strcmp("LOCKY", argv[1] )) {
-		cv::Ptr<locky::LOCKYFeatureDetector> detector = locky::LOCKYFeatureDetector::create(100000,7,3,30,false);
+		cv::Ptr<locky::LOCKYFeatureDetector> detector = locky::LOCKYFeatureDetector::create(45000,5,3,30,false); //100000,7,3,30
 		detector->detect(src_1, keypoints_1);
 		t1 = cv::getTickCount();
 		detector->detect(src_1, keypoints_1);
@@ -245,8 +251,9 @@ int main(int argc, char** argv)
 	if( !strcmp("BRIEF", argv[2] )){
 		/*Parametros por defecto:
 		  static Ptr< BriefDescriptorExtractor > 	create (int bytes=32, bool use_orientation=false)*/
-
-		Ptr<BriefDescriptorExtractor> featureExtractor = BriefDescriptorExtractor::create();
+		
+		/*parametros SPTAM  bytes=32 */
+		Ptr<BriefDescriptorExtractor> featureExtractor = BriefDescriptorExtractor::create(32,false);
 		//Ptr<BriefDescriptorExtractor> featureExtractor_2 = BriefDescriptorExtractor::create();
 
 		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
@@ -257,7 +264,10 @@ int main(int argc, char** argv)
 	else if( !strcmp("BRISK", argv[2] )){
 		/*Parametros por defecto:
 		  BRISK::BRISK(int thresh=30, int octaves=3, float patternScale=1.0f)*/
-		Ptr<Feature2D> featureExtractor = BRISK::create();
+		/*Parametros SPTAM   # orientationNormalized: 'true'# scaleNormalized: 'true'# patternScale: '22.0'# OpenCV3
+  		thresh: 80 octaves: 1 patternScale: 1.0*/
+
+		Ptr<Feature2D> featureExtractor = BRISK::create(115,1,1.0);
 
 		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
@@ -269,7 +279,8 @@ int main(int argc, char** argv)
 		/*static Ptr< FREAK > 	create (bool orientationNormalized=true, bool scaleNormalized=true,
 		  float patternScale=22.0f, int 	nOctaves=4, const std::vector< int > &selectedPairs=std::vector< int >())*/
 
-		Ptr<Feature2D> featureExtractor = FREAK::create();
+		/*Parametros SPTAM:   patternScale: 42.0 orientationNormalized: true scaleNormalized: true nOctaves: 8 */
+		Ptr<Feature2D> featureExtractor = FREAK::create(42.0,true,8);
 		//extractor->compute(src_1, keypoints_1, descriptors_1);
 		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
@@ -280,7 +291,9 @@ int main(int argc, char** argv)
 		/*static Ptr< ORB >	create (int nfeatures=500, float scaleFactor=1.2f, int nlevels=8, int edgeThreshold=31, int
 		  firstLevel=0, int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31, int
 		  fastThreshold=20)*/
-		Ptr<Feature2D> featureExtractor = ORB::create(500);
+
+		/*Parametros SPTAM:  Name: 'ORB' nFeatures: 2000 scaleFactor: 1.2 nLevels: 1 edgeThreshold: 31*/
+		Ptr<Feature2D> featureExtractor = ORB::create(500,1.2,1,31);
 
 		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
@@ -291,7 +304,9 @@ int main(int argc, char** argv)
 		/*static Ptr< ORB >	create (int nfeatures=500, float scaleFactor=1.2f, int nlevels=8, int edgeThreshold=31, int
 		  firstLevel=0, int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31, int
 		  fastThreshold=20)*/
-		Ptr<Feature2D> featureExtractor = AKAZE::create(AKAZE::DESCRIPTOR_MLDB,64,3,0.003f,1,1);
+
+		/*Parametros SPTAM: descriptor_type: 5 descriptor_size: 0 descriptor_channels: 1 threshold: 0.003 nOctaves: 1 			nOctaveLayers: 1 diffusivity: 1*/
+		Ptr<Feature2D> featureExtractor = AKAZE::create(AKAZE::DESCRIPTOR_MLDB,0,3,0.003f,1,1);
 
 		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
@@ -300,9 +315,9 @@ int main(int argc, char** argv)
 	//Si el descriptor es LATCH
 	else if( !strcmp("LATCH", argv[2] )){
 		/*static Ptr<LATCH> cv::xfeatures2d::LATCH::create(int bytes = 32,
-		 *bool rotationInvariance = true, int half_ssd_size = 3, double sigma = 2.0)		
-		 */
-		Ptr<Feature2D> featureExtractor = LATCH::create(64);
+		 *bool rotationInvariance = true, int half_ssd_size = 3, double sigma = 2.0)*/		
+		/*Parametros SPTAM   bytes: 32 rotationInvariance: false half_ssd_size: 3*/
+		Ptr<Feature2D> featureExtractor = LATCH::create(32,3);
 
 		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
@@ -359,7 +374,14 @@ int main(int argc, char** argv)
 
 	//si el descriptor es BAFT
 	else if(!strcmp("BAFT", argv[2])){
-		Ptr<Feature2D> featureExtractor = BAFT::create(500,64);
+
+		/*Parametros por defecto:
+		ORB(int nfeatures=500, float scaleFactor=1.2f, int nlevels=8, int edgeThreshold=31, int firstLevel=0,
+		int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31)*/
+
+		/* Parametros SPTAM    nfeatures: 600 size: 24 patchSize: 8 #30 gaussianBlurSize: 0 fullRotation: false
+  		scaleFactor: 1.2 nlevels: 8 #8 edgeThreshold: 45 fastThreshold: 20 #20*/
+		Ptr<Feature2D> featureExtractor = BAFT::create(500,24,8,0,false,1.2,8,45,20);
 		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
 	}
