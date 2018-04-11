@@ -51,6 +51,7 @@ double calc_detection(Ptr<FeatureDetector> detector, Mat &img, vector<KeyPoint> 
 
 	if (gettime)
 	{
+		detector->detect(img, keypoints);
 		for(int i=0; i<30;i++){
 			t1 = cv::getTickCount();
 			detector->detect(img, keypoints);
@@ -662,7 +663,13 @@ int main(int argc, char** argv)
 	file<<"Tiempo descripcion por keypoint: "<<tdesc*1000/descriptors_1.rows<<" us "<<endl;
 	file<<"Tiempo Match: "<<tmatch<<" ms "<<endl;
 	file<<"Tiempo total: "<<tdet+tdesc+tmatch<<" ms "<<endl;
-	file<<"Good matches: "<<gms_matches.size()<<endl<<endl;
+	if(!strcmp (argv[3], "GMS"))
+		file<<"Good matches: "<<gms_matches.size()<<endl<<endl;
+	else if(!strcmp (argv[3], "BFM" ) || !strcmp (argv[3], "FLANN" )){
+		file<<"Good matches: "<<good_matches.size()<<endl;
+		file<<"Matches correctos (inliers): "<<	homography_matches.size() <<
+			" ("<<100.f * (float) homography_matches.size() / (float) good_matches.size()<<"%)"<<endl<<endl;
+	}
 	//file<<"Matches correctos (inliers): "<<	homography_matches.size() <<
 		//" ("<<100.f * (float) homography_matches.size() / (float) good_matches.size()<<"%)"<<endl<<endl;
 	waitKey(0);
