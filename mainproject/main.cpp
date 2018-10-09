@@ -22,6 +22,7 @@
 #include <vector>
 #include <assert.h>
 #include <opencv2/flann/flann.hpp>
+#include "ANMS_SSC.hpp"
 
 #include "ldb.h"
 //#include "LATCHK.h"
@@ -57,6 +58,7 @@ double calc_detection(Ptr<FeatureDetector> detector, Mat &img, vector<KeyPoint> 
 			detector->detect(img, keypoints);
 			t2 = cv::getTickCount();
 			tdet += 1000.0*(t2-t1) / cv::getTickFrequency();
+			
 		}
 
 		tdet/=30;
@@ -105,16 +107,16 @@ int main(int argc, char** argv)
 
 	vector<KeyPoint> keypoints_1, keypoints_2;
 	int kpts;
+	//src_1 = imread("images/imagenes_blackbird/left_images/left_1531254018.493000.png", CV_LOAD_IMAGE_GRAYSCALE);
+	//src_2 = imread("images/imagenes_blackbird/left_images/left_1531254018.588000.png", CV_LOAD_IMAGE_GRAYSCALE);
+	//src_1 = imread("/home/emiliano/DRINK/data/leuven/img1.ppm", CV_LOAD_IMAGE_GRAYSCALE);
+	//src_2 = imread("/home/emiliano/DRINK/data/leuven/img3.ppm", CV_LOAD_IMAGE_GRAYSCALE);
 	src_1 = imread("images/000000.png", CV_LOAD_IMAGE_GRAYSCALE);
 	src_2 = imread("images/000001.png", CV_LOAD_IMAGE_GRAYSCALE);
-	//src_1 = imread("src/images/000106.png", CV_LOAD_IMAGE_GRAYSCALE);
-	//src_2 = imread("src/images/000107.png", CV_LOAD_IMAGE_GRAYSCALE);
-	//src_1 = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
-	//src_2 = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
 
 	//Ayuda
-	if(argc < 4 || argc > 5){
-		cout<<"Modo de uso: ./test <detector> <descriptor> <matcher> show (show es opcional)"<<endl;
+	if(argc < 4 || argc > 6){
+		cout<<"Modo de uso: ./test <detector> <descriptor> <matcher> show anms (show y anms son opcionales)"<<endl;
 		cout<<"Detector: FAST, ORB, GFTT, AGAST, BRISK, BAFT, LOCKY, LOCKYS"<<endl;
 		cout<<"Descriptor: BRIEF, BRISK, FREAK, ORB, LDB, LATCH, LATCHK, BAFT, BOLD ,(los que probemos)"<<endl;
 		cout<<"Matcher: BFM, GMS, FLANN"<<endl;
@@ -137,13 +139,27 @@ int main(int argc, char** argv)
 		/* void FAST(InputArray image, vector<KeyPoint>& keypoints, int threshold, bool nonmaxSuppression=true )*/
 		/* Parametros SPTAM:   threshold: 60 nonmaxSuppression: true*/
 
-		Ptr<FastFeatureDetector> detector=FastFeatureDetector::create(106,true);
+		Ptr<FastFeatureDetector> detector=FastFeatureDetector::create(20, true);
 		//Ptr<FastFeatureDetector> detector_2=FastFeatureDetector::create(106);
 		detector->detect(src_1,keypoints_1,Mat());
+		
+		/*vector<cv::KeyPoint> sscKP = */
 		tdet=calc_detection(detector, src_1, keypoints_1, true);
-		//cout<< tdet<<endl;
+
+		/*ANMS*/
+		/*double t1, t2, tanms=0;
+		t1 = cv::getTickCount();
+		ssc(keypoints_1,500,0.1,src_1.cols,src_1.rows);
+		t2 = cv::getTickCount();
+		tanms=1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Tiempo ANMS: "<<tanms<<endl;
+		cout<<"Tiempo det + ANMS: "<<tanms+tdet<<endl;*/
+
 		calc_detection(detector, src_2, keypoints_2, false);
+
 		//cout<< tdet<<endl;
+		//ssc(keypoints_1,500,0.1,src_1.cols,src_1.rows);
+		//ssc(keypoints_2,500,0.1,src_2.cols,src_2.rows);
 	}
 
 	//Si el detector es ORB
@@ -152,9 +168,19 @@ int main(int argc, char** argv)
 		ORB(int nfeatures=500, float scaleFactor=1.2f, int nlevels=8, int edgeThreshold=31, int firstLevel=0,
 		int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31)*/
 		/*Parametros SPTAM:    nFeatures: 2000 scaleFactor: 1.2  nLevels: 1 edgeThreshold: 31*/
-		Ptr<FeatureDetector> detector = ORB::create(500,1.2,1,31);
+		Ptr<FeatureDetector> detector = ORB::create(5000,1.2,1,31);
 		detector->detect(src_1, keypoints_1);
 		tdet=calc_detection(detector, src_1, keypoints_1, true);
+
+		/*double t1,t2, tanms=0;
+		t1 = cv::getTickCount();
+		ssc(keypoints_1,500,0.1,src_1.cols,src_1.rows);
+		t2 = cv::getTickCount();
+		tanms=1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Tiempo ANMS: "<<tanms<<endl;
+		cout<<"Tiempo det + ANMS: "<<tanms+tdet<<endl;*/
+		
+
 		calc_detection(detector, src_2, keypoints_2, false);
 	}
 
@@ -179,10 +205,21 @@ int main(int argc, char** argv)
 		 */
 
 		/* Parametros SPTAM:  threshold: 60 nonmaxSuppression: true  */
-		Ptr<FeatureDetector> detector = AgastFeatureDetector::create(130, false);
+		Ptr<FeatureDetector> detector = AgastFeatureDetector::create(30, false);
 		detector->detect(src_1, keypoints_1);
 		tdet=calc_detection(detector, src_1, keypoints_1, true);
+
+		/*double t1,t2, tanms=0;
+		t1 = cv::getTickCount();
+		ssc(keypoints_1,500,0.1,src_1.cols,src_1.rows);
+		t2 = cv::getTickCount();
+		tanms=1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Tiempo ANMS: "<<tanms<<endl;
+		cout<<"Tiempo det + ANMS: "<<tanms+tdet<<endl;*/
+			
+
 		calc_detection(detector, src_2, keypoints_2, false);
+		//ssc(keypoints_2,500,0.1,src_2.cols,src_2.rows);
 	}
 
 	//Si el detector es GFTT
@@ -193,7 +230,7 @@ int main(int argc, char** argv)
   		/*Parametros SPTAM : nfeatures: 1000  qualityLevel: 0.01 minDistance: 15.0   useeHarrisDetector: false*/
 
 		//tarda lo mismo en detectar 500 o 1000 puntos
-		Ptr<FeatureDetector> detector = GFTTDetector::create(500,0.03,10.8,3,false,0.04);
+		Ptr<FeatureDetector> detector = GFTTDetector::create(500,0.01,16.1,3,false,0.04);
 		detector->detect(src_1, keypoints_1);
 		tdet=calc_detection(detector, src_1, keypoints_1, true);
 		calc_detection(detector, src_2, keypoints_2, false);
@@ -202,16 +239,26 @@ int main(int argc, char** argv)
 		//Si el detector es BAFT
 	else if( !strcmp("BAFT", argv[1] )){
 		/*Parametros por defecto:
-		ORB(int nfeatures=500, float scaleFactor=1.2f, int nlevels=8, int edgeThreshold=31, int firstLevel=0,
+		ORB(int nfeatures=500, float scaleFact or=1.2f, int nlevels=8, int edgeThreshold=31, int firstLevel=0,
 		int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31)*/
 
-		/* Parametros SPTAM    nfeatures: 600 size: 24 patchSize: 8 #30 gaussianBlurSize: 0 fullRotation: false
-  		scaleFactor: 1.2 nlevels: 8 #8 edgeThreshold: 45 fastThreshold: 20 #20*/
+		/* Parametros SPTAM    nfeatures: 500 size: 20 patchSize: 16 #30 gaussianBlurSize: 0 fullRotation: true
+  		scaleFactor: 1.2 nlevels: 4 #8 edgeThreshold: 45 fastThreshold: 20 #20*/
 
-		Ptr<Feature2D> detector = BAFT::create(500,24,8,0,false,1.2,8,45,20);
+		Ptr<Feature2D> detector = BAFT::create(5000,16,20,0,true,1.2,4,45,20);
 		detector->detect(src_1, keypoints_1);
 		tdet=calc_detection(detector, src_1, keypoints_1, true);
+		
+		/*double t1,t2, tanms=0;
+		t1 = cv::getTickCount();
+		ssc(keypoints_1,500,0.1,src_1.cols,src_1.rows);
+		t2 = cv::getTickCount();
+		tanms=1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Tiempo ANMS: "<<tanms<<endl;
+		cout<<"Tiempo det + ANMS: "<<tanms+tdet<<endl;*/
+
 		calc_detection(detector, src_2, keypoints_2, false);
+		//ssc(keypoints_2,500,0.1,src_2.cols,src_2.rows);
 	}
 
 	else if (!strcmp("LOCKYS", argv[1] )) {
@@ -244,7 +291,21 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	kpts=keypoints_1.size();
+	//kpts=keypoints_1.size();
+        //cout<<"argc: "<<argc<<endl;
+	//cout<<argv[5]<<endl;
+	if(argc == 6 && !strcmp("anms", argv[5] )){
+		/*ANMS*/
+		double t1,t2, tanms=0;
+		t1 = cv::getTickCount();
+		ssc(keypoints_1,500,0.1,src_1.cols,src_1.rows);
+		t2 = cv::getTickCount();
+		tanms=1000.0*(t2-t1) / cv::getTickFrequency();
+		cout<<"Tiempo ANMS: "<<tanms<<endl;
+		cout<<"Tiempo det + ANMS: "<<tanms+tdet<<endl;
+                ssc(keypoints_2,500,0.1,src_2.cols,src_2.rows);
+
+	}
 
 	//Descriptores
 	//Si el descriptor es BRIEF
@@ -358,6 +419,7 @@ int main(int argc, char** argv)
 		//LDB(int _bytes = 32, int _nlevels = 3, int _patchSize = 60);
 		//Feature2D featureExtractor = LdbDescriptorExtractor::create();
 
+		//LDB featureExtractor(32); //48
 		LDB featureExtractor(32);
 		featureExtractor.compute(src_1, keypoints_1, descriptors_1, 0);
 		t1 = cv::getTickCount();
@@ -377,12 +439,13 @@ int main(int argc, char** argv)
 	else if(!strcmp("BAFT", argv[2])){
 
 		/*Parametros por defecto:
-		ORB(int nfeatures=500, float scaleFactor=1.2f, int nlevels=8, int edgeThreshold=31, int firstLevel=0,
-		int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31)*/
+    		CV_WRAP static Ptr<BAFT> create(int nfeatures=1000, int size=128,
+            	int patchSize=30, int gaussianBlurSize = 0, bool fullRotation=0,
+            	float scaleFactor=1.2f, int nlevels=8, int edgeThreshold=45, int fastThreshold=20);*/
 
 		/* Parametros SPTAM    nfeatures: 600 size: 24 patchSize: 8 #30 gaussianBlurSize: 0 fullRotation: false
   		scaleFactor: 1.2 nlevels: 8 #8 edgeThreshold: 45 fastThreshold: 20 #20*/
-		Ptr<Feature2D> featureExtractor = BAFT::create(500,24,8,0,false,1.2,8,45,20);
+		Ptr<Feature2D> featureExtractor = BAFT::create(5000,24,30,0,true,1.2,4,45,20);
 		tdesc=calc_description(featureExtractor, src_1, keypoints_1, descriptors_1, true);
 		calc_description(featureExtractor, src_2, keypoints_2, descriptors_2, false);
 	}
@@ -419,12 +482,13 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	if (argc == 5 && !strcmp (argv[4], "show")){
+	if ((argc == 5 || argc == 6) && !strcmp (argv[4], "show")){
 		//Dibujar kpts en las dos imagenes
 		drawKeypoints(src_1, keypoints_1, src_1);
 		drawKeypoints(src_2, keypoints_2, src_2);
-		imshow("keypoints",src_1);
+		imshow("keypoints_1",src_1);
 		imshow("keypoints_2",src_2);
+		
 	}
 
 	//Matching
@@ -457,6 +521,7 @@ int main(int argc, char** argv)
 			if (matches[i][0].distance<nn_ratio_threshold *matches[i][1].distance){
 				good_matches.push_back(matches[i][0]);
 			//cout<< matches[i][0].distance <<" < "<<nn_ratio_threshold *matches[i][1].distance<<endl;
+				//cout<<i<<endl;
 			}
 		}
 		cout<<"Good matches: "<<good_matches.size()<<endl;
@@ -468,6 +533,7 @@ int main(int argc, char** argv)
 			match_left.push_back( keypoints_1[ good_matches[i].queryIdx ].pt );
 			match_right.push_back( keypoints_2[ good_matches[i].trainIdx ].pt );
 			distances.push_back(good_matches[i].distance);
+			
 		}
 
 		Mat correctMatches;
@@ -525,6 +591,7 @@ int main(int argc, char** argv)
 		tmatch += 1000.0*(t2-t1) / cv::getTickFrequency();
 		cout<<"Tiempo de BFmatcher + filtro GMS: " << tmatch << " ms" << endl;
 		cout<<"Good matches: "<<gms_matches.size()<<endl;
+		cout<<"Percent: "<<(gms_matches.size()/500.0)*100<<endl;
 	}
 
 	//Si el matcher es FLANN
@@ -548,9 +615,11 @@ int main(int argc, char** argv)
 	//Se deja esta forma de calcular good matches a fines de comparacion con BFM
 
 		for(unsigned int i = 0; i < matches.size(); i++ ){
-			if (matches[i][0].distance<nn_ratio_threshold *matches[i][1].distance){
+		if (matches[i][0].distance<nn_ratio_threshold *matches[i][1].distance){
 				good_matches.push_back(matches[i][0]);
+				
 			}
+			
 		}
 		cout<<"Good matches: "<<good_matches.size()<<endl;
 
@@ -635,7 +704,7 @@ int main(int argc, char** argv)
 
 	//Mostrar matches
 
-	if (argc == 5 && !strcmp (argv[4], "show")){
+	if ((argc == 5 || argc == 6) && !strcmp (argv[4], "show")){
 		// Draw matches
 		Mat img_matches;
 		if(!strcmp (argv[3], "GMS"))
