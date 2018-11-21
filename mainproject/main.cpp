@@ -113,6 +113,9 @@ int main(int argc, char** argv)
 	//src_2 = imread("/home/emiliano/DRINK/data/leuven/img3.ppm", CV_LOAD_IMAGE_GRAYSCALE);
 	src_1 = imread("images/000000.png", CV_LOAD_IMAGE_GRAYSCALE);
 	src_2 = imread("images/000001.png", CV_LOAD_IMAGE_GRAYSCALE);
+	src_1 = imread("images/python1.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+	src_2 = imread("images/python2.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+
 
 	//Ayuda
 	if(argc < 4 || argc > 6){
@@ -191,7 +194,7 @@ int main(int argc, char** argv)
 
 		*/
 
-		Ptr<FeatureDetector> detector = BRISK::create(115,1,1.0);
+		Ptr<FeatureDetector> detector = BRISK::create(10,1,1.0);
 		detector->detect(src_1, keypoints_1);
 		tdet=calc_detection(detector, src_1, keypoints_1, true);
 		calc_detection(detector, src_2, keypoints_2, false);
@@ -294,7 +297,7 @@ int main(int argc, char** argv)
 	//kpts=keypoints_1.size();
         //cout<<"argc: "<<argc<<endl;
 	//cout<<argv[5]<<endl;
-	if(argc == 6 && !strcmp("anms", argv[5] )){
+	if((argc == 6 && !strcmp("anms", argv[5] )) || (argc == 5 && !strcmp("anms", argv[4] )) ){
 		/*ANMS*/
 		double t1,t2, tanms=0;
 		t1 = cv::getTickCount();
